@@ -1,0 +1,29 @@
+{
+  "name": "content-suite",
+  "private": true,
+  "version": "0.1.0",
+  "packageManager": "npm@11.19.0",
+  "workspaces": [
+    "apps/web"
+  ],
+  "scripts": {
+    "dev": "turbo run dev",
+    "dev:web": "npm run dev --workspace @content-suite/web",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "build": "turbo run build",
+    "api:sync": "cd apps/api && uv sync",
+    "api:dev": "cd apps/api && uv run uvicorn app.main:app --reload",
+    "api:lint": "cd apps/api && uv run ruff check .",
+    "api:typecheck": "cd apps/api && uv run ty check app",
+    "api:test": "cd apps/api && uv run pytest",
+    "api:migrate": "cd apps/api && uv run alembic upgrade head"
+  },
+  "devDependencies": {
+    "turbo": "^2.10.12"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

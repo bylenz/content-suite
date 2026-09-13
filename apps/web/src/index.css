@@ -1,0 +1,170 @@
+@import 'tailwindcss';
+@import 'claymorphism-css/dist/clay.css';
+
+/*
+  Paleta canónica (única fuente de color del producto).
+  Los derivados usan color-mix sobre estos cinco valores.
+*/
+@theme {
+  --color-strawberry: #e63946;
+  --color-honeydew: #f1faee;
+  --color-frosted: #a8dadc;
+  --color-steel: #457b9d;
+  --color-deep: #1d3557;
+
+  /* Derivados de la paleta */
+  --color-canvas: color-mix(in srgb, #f1faee 30%, #ffffff);
+  --color-surface: #ffffff;
+  --color-ink: #1d3557;
+  --color-ink-muted: color-mix(in srgb, #1d3557 70%, #ffffff);
+  /* 32% blanco: contraste AA (4.64:1) para labels secundarios */
+  --color-ink-soft: color-mix(in srgb, #1d3557 68%, #ffffff);
+  --color-line: color-mix(in srgb, #1d3557 8%, #ffffff);
+  --color-tint-frosted: color-mix(in srgb, #a8dadc 22%, #ffffff);
+  --color-tint-steel: color-mix(in srgb, #457b9d 10%, #ffffff);
+
+  /* Estados semánticos derivados exclusivamente de la paleta canónica.
+     Verde y ámbar no existen como hexes propios: se obtienen interpolando
+     tono en oklch (strawberry+frosted → verde; strawberry+honeydew → ámbar)
+     y luego se oscurecen/aclaran con la misma paleta. */
+  --color-success-fg: color-mix(in srgb, color-mix(in oklch, #e63946 60%, #a8dadc) 45%, #1d3557);
+  --color-success-bg: color-mix(in srgb, #f1faee 65%, #ffffff);
+  --color-warning-fg: color-mix(in srgb, color-mix(in oklch, #e63946 50%, #f1faee) 40%, #1d3557);
+  --color-warning-bg: color-mix(in srgb, color-mix(in oklch, #e63946 50%, #f1faee) 16%, #ffffff);
+  --color-danger-fg: color-mix(in srgb, #e63946 72%, #1d3557);
+  --color-danger-bg: color-mix(in srgb, #e63946 9%, #ffffff);
+  --color-info-fg: color-mix(in srgb, #457b9d 25%, #1d3557);
+  --color-info-bg: color-mix(in srgb, #a8dadc 20%, #ffffff);
+
+  --font-sans:
+    'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+  --radius-card: 14px;
+}
+
+/*
+  Materialidad clay (sobre claymorphism-css `.clay`).
+  Solo superficies elevadas: sidebar, tarjetas, paneles, CTAs, badges de estado.
+  Contenido denso (datos, formularios, tablas) usa `.clay-subtle`.
+*/
+.clay-card {
+  --clay-background: var(--color-surface);
+  --clay-border-radius: 14px;
+  --clay-shadow-outset:
+    10px 10px 22px rgba(163, 177, 198, 0.38), -6px -6px 16px rgba(255, 255, 255, 0.78);
+  --clay-shadow-inset-primary: inset 0 1px 0 rgba(255, 255, 255, 0.72);
+  --clay-shadow-inset-secondary: inset -3px -3px 7px rgba(163, 177, 198, 0.16);
+}
+
+.clay-deep {
+  --clay-background: var(--color-deep);
+  --clay-border-radius: 14px;
+  --clay-shadow-outset:
+    10px 10px 22px rgba(29, 53, 87, 0.35), -6px -6px 16px rgba(255, 255, 255, 0.5);
+  --clay-shadow-inset-primary: inset 0 1.5px 0 rgba(255, 255, 255, 0.1);
+  --clay-shadow-inset-secondary: inset 0 0 0 rgba(0, 0, 0, 0);
+}
+
+.clay-chip {
+  --clay-background: var(--color-surface);
+  --clay-border-radius: 9px;
+  --clay-shadow-outset:
+    5px 5px 12px rgba(163, 177, 198, 0.38), -4px -4px 10px rgba(255, 255, 255, 0.85);
+  --clay-shadow-inset-primary: inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  --clay-shadow-inset-secondary: inset -2px -2px 5px rgba(163, 177, 198, 0.14);
+}
+
+/* Relieve reducido para contenido denso: legibilidad sobre materialidad */
+.clay-subtle {
+  --clay-background: var(--color-surface);
+  --clay-border-radius: 10px;
+  --clay-shadow-outset: 0 1px 2px rgba(29, 53, 87, 0.05);
+  --clay-shadow-inset-primary: inset 0 1px 0 rgba(255, 255, 255, 0.65);
+  --clay-shadow-inset-secondary: inset 2px 2px 5px rgba(163, 177, 198, 0.18);
+}
+
+/* CTA azul con relieve físico (Steel Blue accesible sobre texto blanco) */
+.clay-cta {
+  --clay-background: var(--color-steel);
+  --clay-border-radius: 9px;
+  --clay-shadow-outset:
+    7px 7px 16px rgba(69, 123, 157, 0.4), -5px -5px 12px rgba(255, 255, 255, 0.6);
+  --clay-shadow-inset-primary: inset 0 1.5px 0 rgba(255, 255, 255, 0.3);
+  --clay-shadow-inset-secondary: inset 0 0 0 rgba(0, 0, 0, 0);
+  color: #ffffff;
+}
+
+/* Nav activa: selección azul acolchada */
+.nav-active {
+  --clay-background: var(--color-tint-frosted);
+  --clay-border-radius: 9px;
+  --clay-shadow-outset: 0 0 0 rgba(0, 0, 0, 0);
+  --clay-shadow-inset-primary: inset 3px 3px 7px rgba(163, 177, 198, 0.35);
+  --clay-shadow-inset-secondary: inset -3px -3px 7px rgba(255, 255, 255, 0.8);
+}
+
+html {
+  color-scheme: light;
+}
+
+body {
+  margin: 0;
+  background: var(--color-canvas);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+/*
+  Foco visible con contraste >= 3:1 contra las superficies adyacentes
+  (blanco, canvas y tintes claros). Steel Blue sobre superficies claras:
+  4.59 en blanco, 4.52 en canvas, 4.20 en tinte frosted.
+*/
+:where(a, button, input, textarea, [tabindex]):focus-visible {
+  outline: 2px solid var(--color-steel);
+  outline-offset: 1px;
+}
+
+/* Sobre superficies Steel/Deep el foco pasa a claro (Honeydew: 4.30 sobre steel) */
+.clay-cta:focus-visible,
+.clay-deep :focus-visible {
+  outline-color: var(--color-honeydew);
+}
+
+::selection {
+  background: var(--color-frosted);
+  color: var(--color-deep);
+}
+
+.eyebrow {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--color-ink-soft);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+@keyframes pulse-soft {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+.animate-pulse-soft {
+  animation: pulse-soft 1.4s ease-in-out infinite;
+}
+
+/* Feedback táctil y transiciones breves, respetando reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}

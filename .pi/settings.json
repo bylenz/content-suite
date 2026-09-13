@@ -1,0 +1,5 @@
+{
+  "packages": [
+    "npm:pi-supabase@0.1.0"
+  ]
+}

@@ -1,0 +1,30 @@
+# Project-local Pi Supabase MCP configuration and OAuth material
+.pi/supabase.json
+.pi/supabase-mcp-auth.json
+
+# Pi project package cache (sources remain declared in .pi/settings.json)
+.pi/npm/
+
+# Dependencies and build output
+node_modules/
+dist/
+*.tsbuildinfo
+.turbo/
+.vite/
+
+# macOS junk
+.DS_Store
+
+# Local env files
+.env
+.env.*
+!.env.example
+
+# Python (apps/api, managed with uv)
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+content_suite_dev.db
+*.db
