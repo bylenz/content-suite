@@ -2,13 +2,26 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import type { Session, SupabaseClient } from '@supabase/supabase-js'
 import { apiFetch, setApiAuthToken } from '../../shared/api/client'
-import type { Me } from '../../shared/api/types'
+import type { Me, Membership } from '../../shared/api/types'
 import { DEMO_ROLES, isDemoRole, type DemoRole } from './roles'
 import { availableDevRoles, devTokenFor } from './devTokens'
 import { supabase as defaultSupabaseClient } from './supabaseClient'
 import { SessionContext, type SessionProfile, type SessionStatus } from './session-context'
 
 const STORAGE_KEY = 'content-suite.dev.demo-role'
+const ACTIVE_BRAND_STORAGE_KEY = 'content-suite.active-brand-id'
+
+/** Query keys cuya raíz cuelga de una marca (ver cada `api.ts` de feature). */
+const BRAND_SCOPED_QUERY_KEYS = [
+  'brand-dna',
+  'brand-assets',
+  'creative',
+  'content-reviews',
+  'dashboard',
+  'traces',
+  'visual-audit',
+  'visual-reviews',
+] as const
 
 function readStoredRole(): DemoRole | null {
   try {
@@ -20,11 +33,26 @@ function readStoredRole(): DemoRole | null {
   return null
 }
 
+function readStoredActiveBrandId(): string | null {
+  try {
+    return window.localStorage.getItem(ACTIVE_BRAND_STORAGE_KEY)
+  } catch {
+    return null
+  }
+}
+
+function pickActiveMembership(memberships: Membership[]): Membership | null {
+  const preferred = readStoredActiveBrandId()
+  const match = preferred ? memberships.find((m) => m.brand_id === preferred) : undefined
+  return match ?? memberships[0] ?? null
+}
+
 function toProfile(me: Me): SessionProfile {
   return {
     displayName: me.display_name ?? me.email ?? 'Miembro del workspace',
     email: me.email,
-    membership: me.memberships[0] ?? null,
+    memberships: me.memberships,
+    activeMembership: pickActiveMembership(me.memberships),
   }
 }
 
@@ -184,6 +212,26 @@ export function SessionProvider({
     [supabaseClient],
   )
 
+  const switchBrand = useCallback(
+    (brandId: string) => {
+      setProfile((prev) => {
+        if (!prev) return prev
+        const membership = prev.memberships.find((m) => m.brand_id === brandId)
+        if (!membership) return prev
+        try {
+          window.localStorage.setItem(ACTIVE_BRAND_STORAGE_KEY, brandId)
+        } catch {
+          // Sin persistencia disponible; el cambio vive solo en memoria de esta sesión
+        }
+        return { ...prev, activeMembership: membership }
+      })
+      for (const key of BRAND_SCOPED_QUERY_KEYS) {
+        queryClient.removeQueries({ queryKey: [key] })
+      }
+    },
+    [queryClient],
+  )
+
   const refreshProfile = useCallback(async () => {
     try {
       const me = await apiFetch<Me>('/api/v1/me')
@@ -226,6 +274,7 @@ export function SessionProvider({
       signInWithMagicLink,
       signOut,
       refreshProfile,
+      switchBrand,
     }
   }, [
     status,
@@ -237,6 +286,7 @@ export function SessionProvider({
     signInWithMagicLink,
     signOut,
     refreshProfile,
+    switchBrand,
   ])
 
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>

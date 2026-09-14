@@ -16,10 +16,20 @@ function membership(role: Membership['role']): Membership {
   return { brand_id: 'brand-1', brand_name: 'Kinu', brand_slug: 'kinu', role }
 }
 
-function sessionWith(role: Membership['role']): SessionContextValue {
+function sessionWith(
+  role: Membership['role'],
+  extraMemberships: Membership[] = [],
+  switchBrand: (brandId: string) => void = () => {},
+): SessionContextValue {
+  const active = membership(role)
   return {
     status: 'authenticated',
-    profile: { displayName: 'Kinu Dev', email: null, membership: membership(role) },
+    profile: {
+      displayName: 'Kinu Dev',
+      email: null,
+      memberships: [active, ...extraMemberships],
+      activeMembership: active,
+    },
     selectedRole: null,
     availableDevRoles: [],
     authenticate: () => {},
@@ -29,13 +39,18 @@ function sessionWith(role: Membership['role']): SessionContextValue {
     signInWithMagicLink: async () => null,
     signOut: async () => {},
     refreshProfile: async () => {},
+    switchBrand,
   }
 }
 
-function renderSidebar(role: Membership['role']) {
+function renderSidebar(
+  role: Membership['role'],
+  extraMemberships: Membership[] = [],
+  switchBrand?: (brandId: string) => void,
+) {
   return render(
     <MemoryRouter>
-      <SessionContext.Provider value={sessionWith(role)}>
+      <SessionContext.Provider value={sessionWith(role, extraMemberships, switchBrand)}>
         <SidebarContent />
       </SessionContext.Provider>
     </MemoryRouter>,
@@ -64,5 +79,45 @@ describe('navegación Creative Studio', () => {
     expect(screen.queryByText('Creative Studio')).toBeNull()
     renderSidebar('VISUAL_REVIEWER')
     expect(screen.queryByText('Creative Studio')).toBeNull()
+  })
+})
+
+describe('conmutador de workspace', () => {
+  it('muestra el nombre como texto plano cuando la identidad pertenece a una sola marca', () => {
+    renderSidebar('CREATOR')
+    expect(screen.queryByLabelText('Cambiar de workspace')).toBeNull()
+    expect(screen.getByText('Kinu')).toBeDefined()
+  })
+
+  it('ofrece un selector con todas las marcas cuando hay más de una membresía', () => {
+    const second: Membership = {
+      brand_id: 'brand-2',
+      brand_name: 'Segunda Marca',
+      brand_slug: 'segunda-marca',
+      role: 'CREATOR',
+    }
+    renderSidebar('CREATOR', [second])
+
+    const select = screen.getByLabelText('Cambiar de workspace') as HTMLSelectElement
+    expect(select.value).toBe('brand-1')
+    expect(screen.getByRole('option', { name: 'Kinu' })).toBeDefined()
+    expect(screen.getByRole('option', { name: 'Segunda Marca' })).toBeDefined()
+  })
+
+  it('llama a switchBrand con el brand_id elegido', () => {
+    const second: Membership = {
+      brand_id: 'brand-2',
+      brand_name: 'Segunda Marca',
+      brand_slug: 'segunda-marca',
+      role: 'CREATOR',
+    }
+    const switchBrand = vi.fn()
+    renderSidebar('CREATOR', [second], switchBrand)
+
+    const select = screen.getByLabelText('Cambiar de workspace') as HTMLSelectElement
+    select.value = 'brand-2'
+    select.dispatchEvent(new Event('change', { bubbles: true }))
+
+    expect(switchBrand).toHaveBeenCalledWith('brand-2')
   })
 })

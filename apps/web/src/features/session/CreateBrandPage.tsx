@@ -9,7 +9,7 @@ import { useSession } from './useSession'
 
 /**
  * Onboarding self-serve: una identidad autenticada sin ninguna membresía
- * (`profile.membership === null`) no tiene marca activa que mostrar -- en vez
+ * (`profile.activeMembership === null`) no tiene marca activa que mostrar -- en vez
  * de dejar el shell vacío, se le ofrece crear su propio workspace. Quien crea
  * la marca se vuelve automáticamente su CREATOR (ver API.md "Workspaces").
  * Tras el 201, `refreshProfile()` vuelve a pedir `/me`: la nueva membresía

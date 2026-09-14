@@ -41,7 +41,8 @@ function sessionFor(role: 'CREATOR' | 'CONTENT_REVIEWER' | 'VISUAL_REVIEWER'): S
     profile: {
       displayName: 'Kinu Creator',
       email: null,
-      membership: { brand_id: 'brand-1', brand_name: 'Kinu', brand_slug: 'kinu', role },
+      memberships: [{ brand_id: 'brand-1', brand_name: 'Kinu', brand_slug: 'kinu', role }],
+      activeMembership: { brand_id: 'brand-1', brand_name: 'Kinu', brand_slug: 'kinu', role },
     },
     selectedRole: 'creator',
     availableDevRoles: [],
@@ -52,6 +53,7 @@ function sessionFor(role: 'CREATOR' | 'CONTENT_REVIEWER' | 'VISUAL_REVIEWER'): S
     signInWithMagicLink: async () => null,
     signOut: async () => {},
     refreshProfile: async () => {},
+    switchBrand: () => {},
   }
 }
 

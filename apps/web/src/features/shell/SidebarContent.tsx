@@ -18,11 +18,13 @@ const DEMO_ROLE_LABELS: Record<DemoRole, string> = {
  * implementada se listan deshabilitadas.
  */
 export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
-  const { profile, switchRole, availableDevRoles, nextDevRole, signOut } = useSession()
-  const role = profile?.membership?.role
+  const { profile, switchRole, switchBrand, availableDevRoles, nextDevRole, signOut } =
+    useSession()
+  const role = profile?.activeMembership?.role
   const navItems = role ? NAV_ITEMS[role] : Object.values(NAV_ITEMS)[0]
   const grouped = groupNavItems(navItems)
-  const workspaceName = profile?.membership?.brand_name ?? WORKSPACE_FALLBACK_NAME
+  const workspaceName = profile?.activeMembership?.brand_name ?? WORKSPACE_FALLBACK_NAME
+  const memberships = profile?.memberships ?? []
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-1 p-3.5">
@@ -39,16 +41,39 @@ export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
       <div className="clay clay-chip mb-2.5 flex items-center gap-2.5 px-2.5 py-2">
         <span
           aria-hidden="true"
-          className="grid size-[22px] place-items-center rounded-[7px] bg-strawberry text-[10px] font-bold text-white shadow-[inset_0_1px_0_rgba(255,255,255,.35),3px_3px_8px_rgba(230,57,70,.35)]"
+          className="grid size-[22px] shrink-0 place-items-center rounded-[7px] bg-strawberry text-[10px] font-bold text-white shadow-[inset_0_1px_0_rgba(255,255,255,.35),3px_3px_8px_rgba(230,57,70,.35)]"
         >
           {workspaceName.charAt(0)}
         </span>
-        <span className="min-w-0 flex-1">
-          <span className="block truncate text-[12.5px] font-semibold leading-tight text-ink">
-            {workspaceName}
+        {memberships.length > 1 ? (
+          <span className="min-w-0 flex-1">
+            <label htmlFor="workspace-switcher" className="sr-only">
+              Cambiar de workspace
+            </label>
+            <select
+              id="workspace-switcher"
+              value={profile?.activeMembership?.brand_id ?? ''}
+              onChange={(event) => switchBrand(event.target.value)}
+              className="w-full truncate bg-transparent text-[12.5px] font-semibold leading-tight text-ink outline-none"
+            >
+              {memberships.map((membership) => (
+                <option key={membership.brand_id} value={membership.brand_id}>
+                  {membership.brand_name}
+                </option>
+              ))}
+            </select>
+            <span className="block text-[10.5px] text-ink-soft">
+              Workspace · {memberships.length} marcas
+            </span>
           </span>
-          <span className="block text-[10.5px] text-ink-soft">Workspace</span>
-        </span>
+        ) : (
+          <span className="min-w-0 flex-1">
+            <span className="block truncate text-[12.5px] font-semibold leading-tight text-ink">
+              {workspaceName}
+            </span>
+            <span className="block text-[10.5px] text-ink-soft">Workspace</span>
+          </span>
+        )}
       </div>
 
       <nav aria-label="Principal" className="flex min-h-0 flex-1 flex-col overflow-y-auto">

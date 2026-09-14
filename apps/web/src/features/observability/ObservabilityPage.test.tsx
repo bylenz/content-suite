@@ -22,12 +22,8 @@ const sessionValue: SessionContextValue = {
   profile: {
     displayName: 'Kinu Creator',
     email: null,
-    membership: {
-      brand_id: 'brand-1',
-      brand_name: 'Kinu',
-      brand_slug: 'kinu',
-      role: 'CREATOR',
-    },
+    memberships: [{ brand_id: 'brand-1', brand_name: 'Kinu', brand_slug: 'kinu', role: 'CREATOR' }],
+    activeMembership: { brand_id: 'brand-1', brand_name: 'Kinu', brand_slug: 'kinu', role: 'CREATOR' },
   },
   selectedRole: 'creator',
   availableDevRoles: [],
@@ -38,6 +34,7 @@ const sessionValue: SessionContextValue = {
   signInWithMagicLink: async () => null,
   signOut: async () => {},
   refreshProfile: async () => {},
+  switchBrand: () => {},
 }
 
 function renderPage() {

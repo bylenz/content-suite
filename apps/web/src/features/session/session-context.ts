@@ -17,8 +17,13 @@ export type SessionStatus = 'initializing' | 'anonymous' | 'authenticated'
 export interface SessionProfile {
   displayName: string
   email: string | null
-  /** Primera membresía del workspace demo; null si la identidad no pertenece a marca alguna */
-  membership: Membership | null
+  /** Todas las marcas a las que pertenece esta identidad (posiblemente varias) */
+  memberships: Membership[]
+  /**
+   * Marca activa elegida por el usuario (`switchBrand`) o, por defecto, la
+   * primera membresía; null si la identidad no pertenece a marca alguna.
+   */
+  activeMembership: Membership | null
 }
 
 export interface SessionContextValue {
@@ -50,6 +55,14 @@ export interface SessionContextValue {
    * fallo aquí no fuerza logout, solo deja el perfil como estaba.
    */
   refreshProfile: () => Promise<void>
+  /**
+   * Cambia la marca activa entre las membresías ya presentes en `profile`
+   * (nunca pide una nueva autenticación: es la misma identidad, otra marca).
+   * Persiste la elección en localStorage y limpia las queries de marca para
+   * que ningún widget muestre datos de la marca anterior. No-op si `brandId`
+   * no está entre las membresías de la identidad actual.
+   */
+  switchBrand: (brandId: string) => void
 }
 
 export const SessionContext = createContext<SessionContextValue | null>(null)

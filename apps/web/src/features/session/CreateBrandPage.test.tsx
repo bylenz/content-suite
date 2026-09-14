@@ -20,7 +20,12 @@ const fetchMock = vi.mocked(apiFetch)
 function sessionWithRefresh(refreshProfile: () => Promise<void>): SessionContextValue {
   return {
     status: 'authenticated',
-    profile: { displayName: 'Nuevo usuario', email: 'new@example.com', membership: null },
+    profile: {
+      displayName: 'Nuevo usuario',
+      email: 'new@example.com',
+      memberships: [],
+      activeMembership: null,
+    },
     selectedRole: null,
     availableDevRoles: [],
     authenticate: () => {},
@@ -30,6 +35,7 @@ function sessionWithRefresh(refreshProfile: () => Promise<void>): SessionContext
     signInWithMagicLink: async () => null,
     signOut: async () => {},
     refreshProfile,
+    switchBrand: () => {},
   }
 }
 
