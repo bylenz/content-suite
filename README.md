@@ -1,202 +1,194 @@
 # Content Suite
 
-Plataforma AI-first para mantener consistencia de marca durante la creación y aprobación de contenido.
+Plataforma AI-first para mantener la consistencia de marca en lanzamientos masivos de productos: un Manual de Marca generado por IA se convierte en conocimiento recuperable (RAG), cada pieza de contenido se genera respetándolo, pasa por un flujo de aprobación con dos revisores humanos y una auditoría visual multimodal, y todo queda trazado en Langfuse.
 
-## Objetivo del reto
+Respuesta al **Reto Técnico: Content Suite** (Alicorp IAGen).
 
-Content Suite implementa cuatro capacidades principales:
+## Entrega
 
-1. **Brand DNA Architect** — crea y versiona la fuente de verdad de una marca.
-2. **Creative Studio** — genera contenido usando Brand Knowledge recuperado mediante RAG.
-3. **Governance + Brand Audit** — separa revisión semántica y cumplimiento visual multimodal.
-4. **Observability** — traza contexto recuperado, prompts, modelos, respuestas y latencias con Langfuse.
+| Entregable | Valor |
+| --- | --- |
+| Aplicación web | https://content-suite-web.vercel.app/ |
+| API (FastAPI) | https://content-suite-api-iy88.onrender.com (`/health/ready`, `/docs`) |
+| Repositorio | https://github.com/bylenz/content-suite |
+| Dependencias Python | `apps/api/requirements.txt` (exportado desde `uv.lock`; `pyproject.toml` + `uv.lock` son la fuente) |
+| Langfuse | _URL del proyecto entregada junto con las credenciales_ |
+| Credenciales (3 roles) | _Entregadas por separado a los evaluadores; ver [Roles y credenciales](#roles-y-credenciales)_ |
+| Presentación ejecutiva | 6 diapositivas: arquitectura, valor de negocio y limitaciones (entregada junto con las credenciales) |
 
-## Roles
+> La API corre en el plan gratuito de Render: tras ~15 minutos sin tráfico se suspende y la primera petición puede tardar 30–60 s. El frontend muestra el estado de conexión mientras despierta.
 
-- **Creator** — crea Brand DNA y contenido.
-- **Content Reviewer** — revisa el contenido y solicita cambios o aprueba.
-- **Visual Compliance Reviewer** — ejecuta auditoría multimodal y toma la decisión final sobre el visual.
+## Cómo cubre los módulos del reto
 
-## Stack
+| Módulo del reto | Implementación en Content Suite |
+| --- | --- |
+| **I. Brand DNA Architect** | `POST /brand-dna/generate` recibe un brief (producto, tono, público) y la IA devuelve un manual estructurado (Pydantic `BrandDNAOutput`: brand core, audiencia, tono, mensajes, reglas, guías visuales). El Creator lo edita como borrador y lo **publica como versión inmutable**. Al publicar, el módulo Knowledge lo trocea, genera embeddings y lo guarda en **pgvector** (`brand_knowledge_chunks`). |
+| **II. Creative Engine** | Creative Studio crea **descripciones de producto, guiones de video y prompts de imagen**. Antes de cualquier generación el backend construye un **contexto híbrido**: reglas obligatorias (always/never/restricciones) filtradas por metadata + top-k semántico por tipo de tarea. Si no hay Brand Knowledge sincronizado, no genera contenido genérico: responde 503 controlado. Cada versión guarda las reglas aplicadas (`applied_rule_ids`, verificadas contra lo recuperado) y un **consistency check** contra el manual. |
+| **III. Governance & Multimodal Audit** | Flujo de estados `DRAFT → PENDING_CONTENT_REVIEW → CONTENT_CHANGES_REQUESTED / CONTENT_APPROVED → PENDING_VISUAL_REVIEW → VISUAL_CHANGES_REQUESTED / FINAL_APPROVED`. El **Content Reviewer (Aprobador A)** aprueba o pide cambios sobre la versión exacta enviada. El **Visual Compliance Reviewer (Aprobador B)** recibe la imagen subida y ejecuta la auditoría: un modelo de visión contrasta el visual con las reglas visuales recuperadas del manual y devuelve `checks` pass/fail por regla, `findings` con evidencia y recomendación, y un score determinista calculado en backend. La decisión final es humana. |
+| **IV. Observabilidad** | Cada capability de IA (generación de Brand DNA, sync de knowledge, generación creativa, consistency check, auditoría visual) emite spans a **Langfuse** con el contexto recuperado (`retrieved_rule_ids`), `prompt_version`, modelo, latencia y estado. El `langfuse_trace_id` se persiste en versiones y auditorías, y la app expone una vista **Observability** (`GET /api/v1/traces`) como facade de solo lectura. |
 
-### Frontend
-- npm workspaces + Turborepo para el monorepo
-- React
-- Vite
-- TypeScript
-- Tailwind CSS
-- TanStack Query
-- React Hook Form
-- Zod
+Criterios de evaluación: prompts versionados en `apps/api/app/ai/prompts.py` (`brand.architect.v1`, `creative.*.v1`, `consistency.text.v1`, `audit.visual.v1`); RBAC y transiciones de estado aplicadas en backend (`*/policies.py`, 403/409); RAG híbrido en `apps/api/app/knowledge/`; front, API y modelos integrados con adaptadores intercambiables en `apps/api/app/ai/providers/`.
 
-### Backend
-- `uv` para dependencias, entorno y ejecución
-- FastAPI
-- Python 3.12+
-- Pydantic
-- SQLAlchemy 2
-- Alembic
+## Roles y credenciales
 
-### Plataforma
-- Supabase PostgreSQL
-- pgvector
-- Supabase Auth
-- Supabase Storage
-- Langfuse
+Los tres roles del reto se mapean así (el rol lo resuelve el backend en `GET /api/v1/me` a partir de `brand_memberships`; la UI solo oculta controles):
 
-### AI
-- Text model behind adapter interface
-- Vision model behind adapter interface
-- Embedding model behind adapter interface
-- Initial text provider: Groq-compatible adapter
-- Initial vision provider: Gemini-compatible adapter
+| Rol del reto | Rol en la app | Ve en el sidebar | Puede |
+| --- | --- | --- | --- |
+| Creador | `CREATOR` | Dashboard, Brand DNA, Creative Studio, Observability | Crear/generar/publicar Brand DNA, subir logo y referencias, crear ítems, generar, regenerar, editar como nueva versión, consistency check, subir visual, enviar a revisión. No aprueba. |
+| Aprobador A | `CONTENT_REVIEWER` | Dashboard, Brand DNA (lectura), Approvals, Observability | Ver cola, inspeccionar versión enviada y contexto aplicado, aprobar o solicitar cambios. Nunca edita contenido. |
+| Aprobador B | `VISUAL_REVIEWER` | Dashboard, Brand DNA (lectura), Brand Audit, Observability | Ver cola visual, ejecutar auditoría multimodal, aprobar o solicitar cambios sobre el visual (con aceptación explícita de excepciones HIGH). |
+
+Las credenciales (correo + contraseña de Supabase Auth para cada rol, todas con membresía en la marca demo **Kinu**) no se versionan en el repositorio; se entregan junto con la URL de Langfuse.
+
+## Recorrido sugerido para evaluar
+
+1. **Creator** → *Brand DNA* → *Generar con IA*: brief tipo "Snack saludable de quinua, tono divertido pero profesional, público Gen Z". Revisar el borrador y **Publicar**. En *Brand DNA* se ve el estado de sincronización del Brand Knowledge (chunks indexados en pgvector).
+2. **Creator** → *Creative Studio* → nuevo ítem (descripción, guion o prompt de imagen) → **Generar**. Abrir *Contexto aplicado* para ver qué reglas obligatorias y semánticas se recuperaron. Ejecutar **Consistency check**, subir el visual del producto y **Enviar a revisión**.
+3. **Aprobador A** → *Approvals*: inspeccionar la versión exacta enviada, **Solicitar cambios** (con feedback) o **Aprobar**.
+4. **Aprobador B** → *Brand Audit*: **Ejecutar auditoría** sobre la imagen; el resultado muestra check verde por regla o el hallazgo con evidencia (p. ej. logo fuera de las reglas de uso), score y resumen. **Aprobar** o **Solicitar cambios**.
+5. Cualquier rol → *Observability*: cada operación de IA con su `trace_id`, modelo, latencia y reglas recuperadas; el mismo `trace_id` se busca en Langfuse para ver el prompt completo.
 
 ## Arquitectura
 
-El sistema usa un **monorepo estructurado con Turborepo**. `apps/api` es un **modular monolith** en FastAPI; PostgreSQL contiene el estado canónico y pgvector una representación derivada del Brand Knowledge.
+```text
+Brand Brief → Brand DNA (versionado) → Brand Knowledge (pgvector)
+           → Creative generation (RAG híbrido) → Content Review (humano)
+           → Visual upload → Multimodal Audit (visión + RAG) → Visual decision (humano)
+           ↘ Langfuse traces en cada capability de IA
+```
 
-Turborepo orquesta tareas entre apps. npm workspaces gestiona el frontend y `uv` gestiona exclusivamente el backend Python. Antes de instalar o actualizar cualquier librería, se consulta Context7 para comprobar su documentación y versión estable compatible; si no dispone de una entrada exacta, se verifica la fuente oficial y el registry.
+- **Monorepo** con npm workspaces + Turborepo: `apps/web` (React SPA) y `apps/api` (FastAPI).
+- `apps/api` es un **monolito modular**: `identity` (RBAC), `brand_dna`, `brand_assets`, `knowledge` (RAG), `creative`, `governance`, `visual_audit`, `activity`, `observability`, `ai` (plataforma de IA), `storage`. Cada módulo tiene `router / service / repository / policies / schemas / models`.
+- **PostgreSQL (Supabase)** es el estado canónico; **pgvector** guarda una representación derivada del Brand DNA publicado (nunca es fuente de verdad). En local se usa SQLite con la misma migración Alembic y un ranking coseno en Python como seam de pruebas.
+- **RAG híbrido** (ADR-004): reglas obligatorias por metadata + búsqueda semántica top-k por tarea (texto, prompt de imagen, auditoría visual). Fail-safe: sin conocimiento obligatorio no se genera.
+- **Plataforma de IA** (ADR-005): los dominios consumen puertos `TextModel`, `VisionModel`, `EmbeddingModel`; los SDKs solo viven en `app/ai/providers/`. Fakes deterministas para tests.
+- **Auth**: Supabase Auth (correo + contraseña) en el front; la API verifica el JWT (issuer + audiencia) y resuelve rol y membresía desde la base de datos. RLS endurecido en Supabase (change 007).
+- **Storage**: bucket privado de Supabase Storage para visuales y assets de marca; solo URLs firmadas de corta duración (300 s) y límite de 5 MB por archivo.
 
-Pi usa `pi-supabase` como MCP local del proyecto. Su configuración y cualquier material de OAuth se ignoran en Git; al primer uso, aceptar la confianza del proyecto y ejecutar `/supabase connect` para autorizar el endpoint oficial de Supabase.
+Documentación de diseño: `PROJECT_CONTEXT.md`, `ARCHITECTURE.md`, `MODULES.md`, `DATA_MODEL.md`, `WORKFLOWS.md`, `AI_SYSTEM.md`, `API.md`, `docs/adr/*`, `docs/OBSERVABILITY.md`, `docs/SECURITY.md`, `docs/DEPLOYMENT.md`, `docs/UI_UX.md`.
 
-`starter-design/Content Suite.dc.html` y la captura de referencia son la autoridad visual de todas las pantallas y secciones. La implementación conserva su jerarquía operativa, superficies suaves, acento azul y estados pastel, con un claymorphism azul más marcado mediante CSS propio (superficies `.clay-*`) y primitives source-owned de shadcn/ui en tarjetas, navegación, CTAs y badges. El relieve se reduce en formularios y contenido denso para preservar contraste y escaneabilidad. La paleta canónica es Strawberry Red `#E63946`, Honeydew `#F1FAEE`, Frosted Blue `#A8DADC`, Steel Blue `#457B9D` y Deep Space Blue `#1D3557`; ver roles de cada color en `docs/UI_UX.md`. Se implementan solo los flujos incluidos en la change activa.
+## Stack
 
-Antes de modificar arquitectura, leer:
+| Capa | Tecnología |
+| --- | --- |
+| Frontend | React 19, Vite, TypeScript, Tailwind CSS 4, TanStack Query, React Router, React Hook Form + Zod, shadcn/ui primitives, motion; desplegado en **Vercel** |
+| Backend | Python 3.12, FastAPI, Pydantic 2, SQLAlchemy 2, Alembic, `uv`; desplegado en **Render** (`render.yaml`) |
+| Datos / Auth / Storage | **Supabase**: PostgreSQL + pgvector, Auth, Storage privado |
+| Texto y embeddings | **OpenAI** (`gpt-4o-mini`, `text-embedding-3-small` por defecto) tras el adaptador `openai_text` / `openai_embeddings` |
+| Visión | **GLM** (Z.ai, `glm-5.3-flash` por defecto) tras el adaptador `glm_vision` |
+| Observabilidad | **Langfuse Cloud** tras `observability/langfuse_adapter.py` (no-op si no está configurado) |
 
-1. `PROJECT_CONTEXT.md`
-2. `ARCHITECTURE.md`
-3. `MODULES.md`
-4. `DATA_MODEL.md`
-5. `WORKFLOWS.md`
-6. `AI_SYSTEM.md`
-7. `API.md`
-8. `AGENTS.md`
+El reto sugiere Groq y Google AI Studio; se usaron OpenAI y GLM por disponibilidad de claves. Cambiar de proveedor es añadir un adaptador en `app/ai/providers/` y seleccionarlo por variable de entorno.
 
 ## Desarrollo local
 
 ### Prerrequisitos
 
-- Node `>=22` y npm 11 (raíz, npm workspaces)
-- [`uv`](https://docs.astral.sh/uv/) (gestiona Python 3.12 y todas las dependencias de `apps/api`)
-- PostgreSQL/Supabase solo para validar la migración en el dialecto canónico; el resto usa SQLite local
+- Node `>=22` y npm 11.
+- [`uv`](https://docs.astral.sh/uv/) (gestiona Python 3.12 y las dependencias de `apps/api`).
+- Un proyecto de Supabase (para login real). SQLite basta para la API en local; PostgreSQL/Supabase solo para validar el dialecto canónico.
 
-### Instalación
+### Instalación y ejecución
 
 ```bash
-npm install            # workspaces web + turbo (raíz)
+npm install            # workspaces web + turbo
 npm run api:sync       # uv sync en apps/api (crea .venv)
-```
+cp apps/api/.env.example apps/api/.env
+cp apps/web/.env.example apps/web/.env
 
-### Ejecución
-
-```bash
+npm run api:migrate    # alembic upgrade head (SQLite por defecto)
+npm run api:dev        # uvicorn en http://localhost:8000
 npm run dev:web        # Vite en http://localhost:5173
-npm run api:dev        # uvicorn en http://localhost:8000 (requiere CONTENT_SUITE_AUTH_JWT_SECRET)
 ```
 
-Variables de entorno (ver `apps/api/.env.example` y `apps/web/.env.example`):
+Alternativa sin `uv` (solo ejecución): `cd apps/api && pip install -r requirements.txt && uvicorn app.main:app`.
 
-- `CONTENT_SUITE_AUTH_JWT_SECRET` — secreto HS256 compatible Supabase; sin él, `/api/v1/me` responde 503.
-- `CONTENT_SUITE_AUTH_JWT_ISSUER` — issuer esperado (`https://<project-ref>.supabase.co/auth/v1`); se valida junto con la audiencia `authenticated`.
-- `CONTENT_SUITE_DATABASE_URL` — por defecto `sqlite:///./content_suite_dev.db`; el objetivo canónico es `postgresql+psycopg://…` (Supabase).
-- `VITE_API_URL` — base de la API para el cliente web (por defecto `http://localhost:8000`).
+### Variables de entorno
 
-El shell web arranca anónimo. La única entrada es el login real con Supabase Auth (correo + contraseña, `VITE_SUPABASE_URL` + `VITE_SUPABASE_ANON_KEY`): el access token se adjunta a la API y la sesión solo se consolida tras un `GET /api/v1/me` 200; identidad, membresías y rol provienen únicamente de esa respuesta (base de datos). No existe modo demo ni identidades de prueba en el frontend. La API acepta CORS desde `http://localhost:5173`.
+Todas documentadas en `apps/api/.env.example` y `apps/web/.env.example`. Las esenciales:
 
-Una cuenta autenticada sin membresías ve el onboarding "Crea tu primer workspace"; desde el sidebar, "Nuevo workspace" (`/workspaces/new`) crea marcas adicionales y el conmutador cambia entre ellas. Ambos usan `POST /api/v1/brands`, gateado por `CONTENT_SUITE_BRAND_CREATION_ALLOWLIST` (correo del creador; `*` en local).
+| Variable | Uso |
+| --- | --- |
+| `CONTENT_SUITE_AUTH_JWT_SECRET`, `CONTENT_SUITE_AUTH_JWT_ISSUER` | Verificación del JWT de Supabase (audiencia `authenticated`). Sin ellas `/api/v1/me` responde 503. |
+| `CONTENT_SUITE_DATABASE_URL` | `sqlite:///./content_suite_dev.db` por defecto; `postgresql+psycopg://…` en Supabase. |
+| `CONTENT_SUITE_CORS_ORIGINS` | Orígenes permitidos (`*` en producción: auth por bearer, sin cookies). |
+| `CONTENT_SUITE_BRAND_CREATION_ALLOWLIST` | Correos que pueden crear workspaces (`*` solo en local). |
+| `CONTENT_SUITE_AI_PROVIDER=openai`, `CONTENT_SUITE_OPENAI_API_KEY` | Texto y embeddings. |
+| `CONTENT_SUITE_VISION_PROVIDER=glm`, `CONTENT_SUITE_GLM_API_KEY` | Auditoría visual. |
+| `CONTENT_SUITE_LANGFUSE_PUBLIC_KEY`, `..._SECRET_KEY`, `..._HOST` | Tracing (las tres, o no-op). |
+| `CONTENT_SUITE_STORAGE_PROJECT_URL`, `..._SERVICE_KEY`, `..._BUCKET` | Storage privado (las tres, o 503 controlado al subir). |
+| `VITE_API_URL`, `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` | Cliente web. |
 
-### Seeds y tokens de desarrollo (solo API)
+Sin claves de IA la app arranca y las capabilities fallan con `AIProviderNotConfiguredError` (503), nunca con contenido inventado.
 
-Flujo local (desde `apps/api`, con `CONTENT_SUITE_AUTH_JWT_SECRET` e `ISSUER` ya configurados en `apps/api/.env`):
+### Seeds y tokens de desarrollo
 
 ```bash
-npm run api:migrate                            # 1. migraciones (incluye brand_dna_versions)
 cd apps/api
-uv run python -m scripts.seed                 # 2. marca Kinu + 3 perfiles + membresías (idempotente)
-uv run python -m scripts.dev_tokens           # 3. acuña tokens HS256 de 15 min para probar la API
+uv run python -m scripts.seed          # marca Kinu + 3 perfiles + membresías (idempotente)
+uv run python -m scripts.dev_tokens    # tokens HS256 de 15 min para probar la API con curl/httpie
 ```
 
-Los tokens del paso 3 sirven para llamar a la API directamente (curl/httpie) con las identidades sembradas; el frontend ya no los lee (el mapping `VITE_DEV_API_TOKEN_*` que el script escribe en `apps/web/.env.development.local` es inerte). Para navegar la app hay que iniciar sesión con una cuenta real de Supabase Auth; para probar un rol revisor, esa cuenta necesita una fila en `brand_memberships` con el rol correspondiente.
+Los tokens sirven para la API directamente. Para navegar la app hay que iniciar sesión con una cuenta real de Supabase Auth; para probar un rol revisor, ese usuario necesita una fila en `brand_memberships` con el rol correspondiente. Una cuenta sin membresías ve el onboarding "Crea tu primer workspace" (`POST /api/v1/brands`, gateado por la allowlist).
 
-Con `npm run api:dev` y `npm run dev:web` activos, la conectividad autenticada end-to-end verificada localmente es: CORS preflight desde `http://localhost:5173` con header `authorization` → 200; `GET /api/v1/me` con token de dev → 200 con membresía `kinu` y rol resuelto en backend; sin token o token inválido → 401 con envelope `{error:{code:"UNAUTHENTICATED"}}` y la sesión web permanece anónima. Sobre `/api/v1/brands/{brand_id}/brand-dna` el Creator puede crear/editar el borrador y publicar (`expected_draft_id`); los revisores solo leen versiones publicadas (`draft: null`).
-
-### Checks (raíz)
+### Checks
 
 ```bash
-npm run lint           # ESLint (web) vía Turbo
-npm run typecheck      # tsc -b (web) — solo el workspace web; la API se typechequea con api:typecheck
+npm run lint           # ESLint (web)
+npm run typecheck      # tsc -b (web)
+npm run test           # vitest (web)
 npm run build          # build de producción web
-npm run test           # Turbo: hoy no hay tareas de test en web (exclusión documentada en la change); backend usa api:test
-npm run api:lint       # ruff check (apps/api)
-npm run api:typecheck  # ty check app (apps/api)
-npm run api:test       # pytest (apps/api)
-cd apps/api && uv run ruff format --check .   # formato backend
+npm run api:lint       # ruff check
+npm run api:typecheck  # ty check app
+npm run api:test       # pytest (~520 tests, fakes deterministas; sin llamadas reales a proveedores)
+cd apps/api && uv run ruff format --check .
 ```
 
-### Migraciones (Alembic)
+Nota: `tests/test_trace_facade.py` asume Langfuse **no** configurado; si `apps/api/.env` tiene claves de Langfuse, ese test falla en local por diseño. Ejecutar la suite sin esas variables o en un shell limpio.
+
+### Migraciones
 
 ```bash
-# SQLite local (por defecto)
-npm run api:migrate                                  # alembic upgrade head
-# Dialecto canónico (Supabase PostgreSQL) — contra una base limpia:
+npm run api:migrate                                   # SQLite local
 cd apps/api
-CONTENT_SUITE_DATABASE_URL='postgresql+psycopg://USER:PASS@HOST:5432/DB' uv run alembic upgrade head
-CONTENT_SUITE_DATABASE_URL='postgresql+psycopg://USER:PASS@HOST:5432/DB' uv run alembic downgrade base
 CONTENT_SUITE_DATABASE_URL='postgresql+psycopg://USER:PASS@HOST:5432/DB' uv run alembic upgrade head
 ```
 
-Nunca escribir credenciales reales en archivos versionados; usar variables de entorno.
+Nunca escribir credenciales reales en archivos versionados.
 
-### Dependencias y versiones comprobadas
+## Despliegue
 
-Instaladas con Context7/registry verificados; lockfiles: `package-lock.json` (npm) y `apps/api/uv.lock` (uv).
+- **API**: `render.yaml` (Blueprint) crea el web service con `uv sync --frozen --no-dev`, ejecuta `alembic upgrade head` al arrancar y usa `/health/ready` como health check. Los secretos se declaran con `sync: false` y se cargan en el Dashboard de Render.
+- **Web**: `apps/web/vercel.json` reescribe todas las rutas a `index.html` (SPA). Variables `VITE_*` en el proyecto de Vercel.
+- **Supabase**: migraciones Alembic sobre la base del proyecto; bucket privado `content-suite`; Auth con proveedor email/contraseña.
 
-| Área | Dependencia | Versión |
-| --- | --- | --- |
-| raíz | turbo | 2.10.12 |
-| web | react / react-dom | 19.3.0 |
-| web | react-router | 8.3.1 |
-| web | @tanstack/react-query | 5.102.8 |
-| web | react-hook-form | 7.88.0 |
-| web | @hookform/resolvers | 5.9.1 |
-| web | zod | 4.6.4 |
-| web | motion (motion/react) | 13.2.0 |
-| web | shadcn primitives (@/components/ui) + cn | 0.3.0 |
-| web | radix-ui (Label/Slot) | 1.6.7 |
-| web | class-variance-authority | 0.7.1 |
-| web | vite | 8.3.0 |
-| web | tailwindcss + @tailwindcss/vite | 4.3.3 |
-| web | typescript | 5.9.3 (types-eslint requiere <6.1.0) |
-| web | eslint + @eslint/js | 10.10.0 / 10.0.1 |
-| api | fastapi | 0.141.1 |
-| api | pydantic / pydantic-settings | 2.13.5 / 2.15.0 |
-| api | sqlalchemy | 2.0.52 |
-| api | alembic | 1.20.0 |
-| api | psycopg[binary] | 3.3.5 |
-| api | pyjwt | 2.14.0 |
-| api | uvicorn | 0.52.4 |
-| api (dev) | pytest / httpx | 9.1.1 / 0.28.1 |
-| api (dev) | ruff | 0.16.7 |
-| api (dev) | ty | 0.0.80 |
+Detalle en `docs/DEPLOYMENT.md`.
 
-## Deuda conocida de foundation
+## Estructura del repositorio
 
-Ítems de verificación pendientes de `001-foundation`; son seguimiento de verificación, no alcance de producto implementado:
+```text
+apps/api/app/         módulos de dominio + ai/ + observability/ + storage/
+apps/api/alembic/     migraciones (SQLite y PostgreSQL/pgvector)
+apps/api/scripts/     seed.py, dev_tokens.py
+apps/api/tests/       pytest (unit, contratos, migraciones, API)
+apps/web/src/features/  brand-dna, creative, approvals, brand-audit, observability, dashboard, session, shell
+docs/                 ADRs, seguridad, observabilidad, despliegue, UI/UX, testing
+openspec/             specs aceptadas y changes 001–014 (proposal, design, tasks)
+specs/                specs de alto nivel por módulo
+```
 
-- **Round-trip de migración en PostgreSQL/Supabase**: aún debe ejecutarse con credenciales seguras del proyecto contra una base limpia (hoy solo se verificó en SQLite, incluida la migración `brand_dna_versions` de `002`). Ejecutar `upgrade head` → `downgrade base` → `upgrade head` con `CONTENT_SUITE_DATABASE_URL=postgresql+psycopg://…` antes de depender del dialecto canónico.
-- **Interacción por teclado en navegador**: el drawer móvil y el flujo autenticado por teclado no pudieron automatizarse en navegador (permiso de accesibilidad del SO no disponible; no se agregaron dependencias de automatización). La revisión visual 3.6/4.3 se realizó con capturas headless reales (desktop 1440×900 y móvil 390×844, vistas anónima/Creator/reviewer incluidas) y auditoría estática de foco (contrastes 4.08–11.56:1) y `prefers-reduced-motion`.
+## Limitaciones conocidas
 
-## Deuda conocida de Brand DNA (002)
+- **Capas gratuitas**: Render suspende la API sin tráfico (primer request lento); Langfuse Cloud y Supabase en planes free.
+- **Auditoría visual descriptiva**: el modelo de visión juzga reglas expresadas en texto (uso de logo, paleta, composición); no mide píxeles ni proporciones exactas. El score es informativo y la decisión es humana.
+- **Proveedores**: OpenAI y GLM en lugar de Groq y Gemini (sugeridos, no obligatorios). Sin fallback automático entre proveedores.
+- **Verificación E2E**: la suite automatizada usa fakes; el recorrido con proveedores reales se validó manualmente (ver `openspec/changes/008-visual-compliance/tasks.md` 8.3 y `009-content-governance/tasks.md` 5.1 para el checklist).
+- **Deuda técnica menor**: `useFieldArray` con listas de strings usa `register` + `setValue` con un cast documentado en `BrandDnaDocumentForm.tsx`; el round-trip `upgrade → downgrade → upgrade` de Alembic se verificó en SQLite, y en PostgreSQL solo se ha ejecutado `upgrade head` (el despliegue lo aplica al arrancar), no el ciclo completo contra una base limpia.
+- Fuera de alcance por diseño: publicación a redes, generación de imágenes, flujos de aprobación configurables, multi-tenant enterprise.
 
-- **Detector Impeccable**: en esta etapa no estaba disponible en el entorno de ejecución; la última pasada (foundation) no arrojó findings. Ejecutarlo sobre `apps/web/src/features/brand-dna/**`, el Dashboard y la sesión cuando el detector esté disponible.
-- **`useFieldArray` con listas de strings**: RHF 7.88 tipa `FieldArrayPath` solo para arrays de objetos; las listas de strings del formulario usan `register` + `setValue` con un único cast documentado en `BrandDnaDocumentForm.tsx`. Migrar si RHF reintroduce soporte tipado para primitivas.
+## Proceso de desarrollo
 
-## Desarrollo
+Implementación incremental con **OpenSpec**: cada change en `openspec/changes/<n>/` tiene `proposal.md`, delta specs, `design.md` y `tasks.md`. Las 14 changes (`001-foundation` … `014-dashboard-activity`) están completas. Las dependencias se verificaron con Context7/registry antes de instalarse (`package-lock.json`, `apps/api/uv.lock`).
 
-La implementación se realiza incrementalmente con OpenSpec. Los contratos aceptados viven en `openspec/specs/`; cada trabajo nuevo se planifica en `openspec/changes/<change>/` con `proposal.md`, delta specs, `design.md` y `tasks.md`.
-
-El trabajo activo es:
-
-`openspec/changes/002-brand-dna-authoring/`
-
-`001-foundation` está completa y validada. No archivar `002-brand-dna-authoring` ni iniciar otra change sin instrucción.
+La referencia visual es `starter-design/Content Suite.dc.html`: claymorphism azul con superficies `.clay-*`, primitives de shadcn/ui y la paleta Strawberry Red `#E63946`, Honeydew `#F1FAEE`, Frosted Blue `#A8DADC`, Steel Blue `#457B9D`, Deep Space Blue `#1D3557` (roles en `docs/UI_UX.md`).
