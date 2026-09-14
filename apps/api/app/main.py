@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app import errors
 from app.activity.router import router as activity_router
+from app.brand_assets.router import router as brand_assets_router
 from app.brand_dna.router import router as brand_dna_router
 from app.config import get_settings
 from app.creative.router import router as creative_router
@@ -29,6 +30,7 @@ def create_app() -> FastAPI:
     app.include_router(health_router)
     app.include_router(identity_router, prefix="/api/v1")
     app.include_router(brand_dna_router, prefix="/api/v1")
+    app.include_router(brand_assets_router, prefix="/api/v1")
     app.include_router(knowledge_router, prefix="/api/v1")
     app.include_router(creative_router, prefix="/api/v1")
     app.include_router(governance_router, prefix="/api/v1")
