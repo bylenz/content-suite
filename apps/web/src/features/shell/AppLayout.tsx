@@ -82,9 +82,11 @@ export function AppLayout() {
         Saltar al contenido
       </a>
 
-      {/* Sidebar desktop: clara y elevada (referencia) */}
-      <aside className="sticky top-0 hidden h-screen w-[232px] shrink-0 border-r border-line bg-sidebar lg:block">
-        <SidebarContent />
+      {/* Sidebar desktop: panel clay flotante sobre el lienzo (referencia) */}
+      <aside className="sticky top-0 hidden h-screen w-[264px] shrink-0 p-4 pr-0 lg:block">
+        <div className="clay-sidebar h-full min-h-0">
+          <SidebarContent />
+        </div>
       </aside>
 
       {/* Drawer móvil: dialog modal nativo; solo su interior se anima */}
@@ -104,7 +106,7 @@ export function AppLayout() {
           // Clic sobre el backdrop: el target del evento es el propio dialog.
           if (event.target === dialogRef.current) requestClose()
         }}
-        className="fixed inset-y-0 left-0 m-0 h-dvh max-h-dvh w-[268px] bg-sidebar p-0 shadow-[10px_0_28px_rgba(29,53,87,.18)] backdrop:bg-deep/30 backdrop:backdrop-blur-[2px] lg:hidden"
+        className="fixed inset-y-0 left-0 m-0 h-dvh max-h-dvh w-[276px] rounded-r-[26px] bg-sidebar p-0 shadow-[14px_0_36px_rgba(29,53,87,.22)] backdrop:bg-deep/30 backdrop:backdrop-blur-[2px] lg:hidden"
       >
         <motion.div
           initial={false}
@@ -118,7 +120,7 @@ export function AppLayout() {
 
       <div className="flex min-w-0 flex-1 flex-col">
         {/* Barra superior móvil */}
-        <header className="sticky top-0 z-30 flex items-center gap-3 border-b border-line bg-white/95 px-4 py-3 lg:hidden">
+        <header className="sticky top-0 z-30 flex items-center gap-3 bg-canvas/90 px-4 py-3 backdrop-blur-sm lg:hidden">
           <button
             type="button"
             ref={menuButtonRef}
@@ -128,7 +130,7 @@ export function AppLayout() {
             }}
             aria-expanded={drawerPhase === 'open' || drawerPhase === 'closing'}
             aria-controls="app-sidebar-drawer"
-            className="clay clay-chip grid size-9 place-items-center text-steel"
+            className="clay-icon clay-press size-10 text-steel"
           >
             <svg
               width="18"
@@ -149,7 +151,7 @@ export function AppLayout() {
 
         <main
           id="main-content"
-          className="mx-auto w-full max-w-[1240px] flex-1 px-5 py-8 sm:px-8 lg:px-12 lg:py-10"
+          className="mx-auto w-full max-w-[1280px] flex-1 px-5 py-6 sm:px-8 lg:px-10 lg:py-8"
         >
           <Outlet />
         </main>

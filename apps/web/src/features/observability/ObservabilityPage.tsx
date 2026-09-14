@@ -24,7 +24,7 @@ function TraceRow({ trace, onInspect }: { trace: TraceRecord; onInspect: (id: st
   const outcome = OUTCOME_VIEW[trace.outcome]
   return (
     <li>
-      <div className="clay clay-subtle flex flex-wrap items-center justify-between gap-3 px-4.5 py-3.5">
+      <div className="clay clay-subtle clay-hover-raise flex flex-wrap items-center justify-between gap-3 px-4.5 py-3.5">
         <div className="min-w-0">
           <p className="flex flex-wrap items-center gap-2 text-[13.5px] font-semibold text-ink">
             {trace.operation ?? trace.prompt_version ?? 'Trace'}
@@ -135,7 +135,7 @@ function TraceDetail({ traceId, onBack }: { traceId: string; onBack: () => void 
       {trace.outcome === 'error' && (
         <p
           role="alert"
-          className="clay clay-subtle bg-danger-bg px-4 py-3 text-[13px] font-medium text-danger-fg"
+          className="clay clay-tile bg-danger-bg px-4 py-3 text-[13px] font-medium text-danger-fg"
         >
           Error sanitizado: {trace.error_type ?? 'desconocido'} (solo el tipo; nunca payloads).
         </p>
@@ -253,7 +253,7 @@ export function ObservabilityPage() {
       {!langfuse_configured && (
         <p
           role="status"
-          className="clay clay-subtle bg-info-bg px-4 py-3 text-[13px] font-medium text-info-fg"
+          className="clay clay-tile bg-info-bg px-4 py-3 text-[13px] font-medium text-info-fg"
         >
           Langfuse no está configurado en este entorno: el tracing detallado está deshabilitado.
           Los flujos de dominio funcionan con normalidad y los traces locales se siguen registrando
@@ -272,7 +272,7 @@ export function ObservabilityPage() {
               setEntityType(event.target.value)
               setPage(0)
             }}
-            className="rounded-lg border border-line bg-white px-3 py-2 text-[13.5px] text-ink"
+            className="clay-field border-0 px-3.5 py-2.5 text-[13.5px] text-ink"
           >
             <option value="">Todas</option>
             {Object.entries(ENTITY_TYPE_LABELS).map(([value, label]) => (

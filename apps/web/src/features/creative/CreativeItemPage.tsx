@@ -536,8 +536,8 @@ function HistoryCard({
                   aria-label={`Ver versión ${version.version}`}
                   aria-pressed={isSelected}
                   onClick={() => onSelect(isSelected ? null : version.id)}
-                  className={`flex w-full items-center justify-between gap-2 rounded-[9px] px-1.5 py-1 text-left text-[12.5px] transition-colors ${
-                    isSelected ? 'bg-tint-steel' : 'hover:bg-tint-frosted'
+                  className={`flex w-full items-center justify-between gap-2 rounded-[12px] px-2 py-1.5 text-left text-[12.5px] transition-colors ${
+                    isSelected ? 'clay-inset bg-tint-steel' : 'hover:bg-tint-frosted'
                   }`}
                 >
                   {row}

@@ -19,3 +19,16 @@ export function activityLabel(event: ActivityEventOut): string {
     event.event_type.toLowerCase().replaceAll('_', ' ')
   )
 }
+
+/** Tono del punto de actividad: derivado del `event_type` real, con
+ * fallback neutro para tipos no listados. */
+export type ActivityTone = 'success' | 'danger' | 'info' | 'deep' | 'neutral'
+
+export function activityTone(event: ActivityEventOut): ActivityTone {
+  const type = event.event_type
+  if (type.endsWith('APPROVED')) return 'success'
+  if (type.endsWith('CHANGES_REQUESTED')) return 'danger'
+  if (type === 'SUBMITTED' || type.endsWith('UPLOADED')) return 'info'
+  if (type === 'PUBLISHED') return 'deep'
+  return 'neutral'
+}

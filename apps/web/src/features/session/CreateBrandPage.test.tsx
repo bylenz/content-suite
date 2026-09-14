@@ -32,7 +32,7 @@ function sessionWithRefresh(refreshProfile: () => Promise<void>): SessionContext
     switchRole: () => {},
     nextDevRole: null,
     authError: null,
-    signInWithMagicLink: async () => null,
+    signInWithPassword: async () => null,
     signOut: async () => {},
     refreshProfile,
     switchBrand: () => {},

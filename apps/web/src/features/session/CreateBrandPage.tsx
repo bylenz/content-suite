@@ -44,7 +44,7 @@ export function CreateBrandPage() {
       <Card className="flex w-full max-w-md flex-col items-center gap-4 px-8 py-12 text-center">
         <span
           aria-hidden="true"
-          className="clay clay-chip grid size-14 place-items-center text-steel"
+          className="clay-icon animate-float-soft size-16 rounded-[18px] text-steel"
         >
           <svg
             width="24"

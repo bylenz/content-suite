@@ -12,9 +12,12 @@
   --color-deep: #1d3557;
 
   /* Derivados de la paleta */
-  --color-canvas: color-mix(in srgb, #f1faee 30%, #ffffff);
-  /* Sidebar clara y elevada de la referencia (#fbfcfd): blanco con matiz honeydew */
-  --color-sidebar: color-mix(in srgb, #f1faee 8%, #ffffff);
+  /* Lienzo frío y ligeramente más oscuro que las superficies: es lo que hace
+     legible el relieve clay (las luces blancas necesitan un fondo que no sea
+     blanco). Honeydew + un 6% de Steel Blue. */
+  --color-canvas: color-mix(in srgb, #457b9d 6%, color-mix(in srgb, #f1faee 32%, #ffffff));
+  /* Sidebar flotante: blanco con matiz honeydew */
+  --color-sidebar: color-mix(in srgb, #f1faee 10%, #ffffff);
   --color-surface: #ffffff;
   --color-ink: #1d3557;
   --color-ink-muted: color-mix(in srgb, #1d3557 70%, #ffffff);
@@ -30,8 +33,12 @@
      y luego se oscurecen/aclaran con la misma paleta. */
   --color-success-fg: color-mix(in srgb, color-mix(in oklch, #e63946 60%, #a8dadc) 45%, #1d3557);
   --color-success-bg: color-mix(in srgb, #f1faee 65%, #ffffff);
+  /* Verde sólido para puntos/checks: menos strawberry en la interpolación
+     (tono más verde) y solo un 30% de Deep para oscurecer sin virar a teal. */
+  --color-success-solid: color-mix(in srgb, color-mix(in oklch, #e63946 38%, #a8dadc) 70%, #1d3557);
   --color-warning-fg: color-mix(in srgb, color-mix(in oklch, #e63946 50%, #f1faee) 40%, #1d3557);
-  --color-warning-bg: color-mix(in srgb, color-mix(in oklch, #e63946 50%, #f1faee) 16%, #ffffff);
+  /* Fondo ámbar: menos strawberry que el texto para que no se confunda con danger-bg */
+  --color-warning-bg: color-mix(in srgb, color-mix(in oklch, #e63946 28%, #f1faee) 30%, #ffffff);
   --color-danger-fg: color-mix(in srgb, #e63946 72%, #1d3557);
   --color-danger-bg: color-mix(in srgb, #e63946 9%, #ffffff);
   --color-info-fg: color-mix(in srgb, #457b9d 25%, #1d3557);
@@ -40,103 +47,214 @@
   --font-sans:
     'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
 
-  --radius-card: 14px;
+  /* Radios del sistema clay: superficies grandes muy redondeadas, chips y
+     tiles intermedios, controles compactos. */
+  --radius-card: 24px;
+  --radius-tile: 16px;
+  --radius-chip: 14px;
+  --radius-control: 12px;
 }
 
 /*
-  Materialidad clay como CSS propio (la base `.clay` externa fue eliminada
-  en la change 004). Solo superficies elevadas: sidebar, tarjetas,
-  paneles, CTAs, badges de estado. Contenido denso (datos, formularios,
-  tablas) usa `.clay-subtle`.
-  Nota: el import externo anteponía la palabra clave `inset` a valores que
-  ya la incluían (`inset inset …`), invalidando el box-shadow completo; esta
-  versión local aplica el relieve tal como fue diseñado en la referencia.
+  Materialidad clay (claymorphism): volumen por sombras dobles (luz arriba a
+  la izquierda, sombra abajo a la derecha) más un borde interior luminoso.
+  Todas las sombras oscuras derivan de Deep Space Blue (#1d3557) para no
+  introducir grises ajenos a la paleta; las luces son blanco puro.
+
+  Jerarquía de relieve:
+    .clay-card    superficie principal (tarjetas, paneles, sidebar)
+    .clay-deep    hero azul profundo con volumen
+    .clay-chip    elemento pequeño elevado (iconos, selector de workspace)
+    .clay-tile    tile tintado de dato (stats, pipeline) — ligeramente elevado
+    .clay-icon    cuadrado de icono elevado dentro de tiles/nav
+    .clay-subtle  contenido denso de lectura (relieve mínimo)
+    .clay-inset   superficie hundida (campos, selección)
+    .clay-cta     botón principal con labio 3D
   En `@layer components` para que las utilidades Tailwind (bg-*, rounded-*,
   text-*) puedan sobreescribirlas (banners semánticos, hover de filas).
 */
 @layer components {
   .clay {
     background: var(--color-surface);
-    border-radius: 14px;
+    border-radius: var(--radius-card);
   }
 
   .clay-card {
     background: var(--color-surface);
-    border-radius: 14px;
+    border-radius: var(--radius-card);
     box-shadow:
-      10px 10px 22px rgba(163, 177, 198, 0.38),
-      -6px -6px 16px rgba(255, 255, 255, 0.78),
-      inset 0 1px 0 rgba(255, 255, 255, 0.72),
-      inset -3px -3px 7px rgba(163, 177, 198, 0.16);
+      16px 18px 36px rgba(29, 53, 87, 0.13),
+      6px 8px 14px rgba(29, 53, 87, 0.05),
+      -10px -10px 26px rgba(255, 255, 255, 0.95),
+      inset 0 2px 0 rgba(255, 255, 255, 1),
+      inset 3px 3px 10px rgba(255, 255, 255, 0.85),
+      inset -5px -6px 12px rgba(29, 53, 87, 0.055);
+  }
+
+  /* Panel flotante del shell: misma materia que la tarjeta, sombra más amplia */
+  .clay-sidebar {
+    background: var(--color-sidebar);
+    border-radius: 26px;
+    box-shadow:
+      18px 22px 44px rgba(29, 53, 87, 0.14),
+      -10px -10px 26px rgba(255, 255, 255, 0.95),
+      inset 0 2px 0 rgba(255, 255, 255, 1),
+      inset 3px 3px 10px rgba(255, 255, 255, 0.85),
+      inset -5px -6px 12px rgba(29, 53, 87, 0.05);
   }
 
   .clay-deep {
-    background: var(--color-deep);
-    border-radius: 14px;
+    background:
+      radial-gradient(
+        120% 90% at 8% 0%,
+        color-mix(in srgb, var(--color-steel) 42%, var(--color-deep)) 0%,
+        var(--color-deep) 60%
+      );
+    border-radius: var(--radius-card);
+    color: #ffffff;
     box-shadow:
-      10px 10px 22px rgba(29, 53, 87, 0.35),
-      -6px -6px 16px rgba(255, 255, 255, 0.5),
-      inset 0 1.5px 0 rgba(255, 255, 255, 0.1);
+      16px 20px 40px rgba(29, 53, 87, 0.32),
+      -10px -10px 26px rgba(255, 255, 255, 0.85),
+      inset 0 2px 0 rgba(255, 255, 255, 0.22),
+      inset 4px 4px 12px rgba(255, 255, 255, 0.1),
+      inset -8px -10px 20px rgba(0, 0, 0, 0.28);
   }
 
   .clay-chip {
     background: var(--color-surface);
-    border-radius: 9px;
+    border-radius: var(--radius-chip);
     box-shadow:
-      5px 5px 12px rgba(163, 177, 198, 0.38),
-      -4px -4px 10px rgba(255, 255, 255, 0.85),
-      inset 0 1px 0 rgba(255, 255, 255, 0.6),
-      inset -2px -2px 5px rgba(163, 177, 198, 0.14);
+      7px 8px 16px rgba(29, 53, 87, 0.13),
+      -5px -5px 12px rgba(255, 255, 255, 0.95),
+      inset 0 1.5px 0 rgba(255, 255, 255, 1),
+      inset 2px 2px 6px rgba(255, 255, 255, 0.8),
+      inset -3px -3px 7px rgba(29, 53, 87, 0.06);
+  }
+
+  /* Tile tintado de dato: fondo por utilidad bg-* (info/success/warning/
+     danger/tint-*), relieve corto y borde interior luminoso. */
+  .clay-tile {
+    background: var(--color-tint-frosted);
+    border-radius: var(--radius-tile);
+    box-shadow:
+      6px 7px 14px rgba(29, 53, 87, 0.1),
+      -4px -4px 10px rgba(255, 255, 255, 0.9),
+      inset 0 1.5px 0 rgba(255, 255, 255, 0.95),
+      inset 2px 2px 6px rgba(255, 255, 255, 0.6),
+      inset -3px -3px 8px rgba(29, 53, 87, 0.06);
+  }
+
+  /* Cuadrado de icono elevado (esquina de tiles, nav, cabeceras) */
+  .clay-icon {
+    display: grid;
+    place-items: center;
+    background: var(--color-surface);
+    border-radius: var(--radius-control);
+    box-shadow:
+      4px 5px 10px rgba(29, 53, 87, 0.14),
+      -3px -3px 8px rgba(255, 255, 255, 0.95),
+      inset 0 1.5px 0 rgba(255, 255, 255, 0.95),
+      inset -2px -2px 5px rgba(29, 53, 87, 0.08);
   }
 
   /* Relieve reducido para contenido denso: legibilidad sobre materialidad */
   .clay-subtle {
     background: var(--color-surface);
-    border-radius: 10px;
+    border-radius: var(--radius-tile);
     box-shadow:
-      0 1px 2px rgba(29, 53, 87, 0.05),
-      inset 0 1px 0 rgba(255, 255, 255, 0.65),
-      inset 2px 2px 5px rgba(163, 177, 198, 0.18);
+      3px 4px 10px rgba(29, 53, 87, 0.07),
+      -2px -2px 6px rgba(255, 255, 255, 0.9),
+      inset 0 1.5px 0 rgba(255, 255, 255, 0.95),
+      inset -2px -2px 6px rgba(29, 53, 87, 0.05);
   }
 
-  /* CTA azul con relieve físico (Steel Blue accesible sobre texto blanco) */
+  /* CTA azul con labio 3D (Steel Blue accesible sobre texto blanco) */
   .clay-cta {
-    background: var(--color-steel);
-    border-radius: 9px;
-    box-shadow:
-      7px 7px 16px rgba(69, 123, 157, 0.4),
-      -5px -5px 12px rgba(255, 255, 255, 0.6),
-      inset 0 1.5px 0 rgba(255, 255, 255, 0.3);
+    background: linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--color-steel) 82%, #ffffff) 0%,
+      var(--color-steel) 55%,
+      color-mix(in srgb, var(--color-steel) 88%, var(--color-deep)) 100%
+    );
+    border-radius: var(--radius-tile);
     color: #ffffff;
+    box-shadow:
+      0 5px 0 color-mix(in srgb, var(--color-steel) 55%, var(--color-deep)),
+      10px 14px 26px rgba(69, 123, 157, 0.38),
+      -5px -5px 12px rgba(255, 255, 255, 0.75),
+      inset 0 2px 0 rgba(255, 255, 255, 0.45),
+      inset 2px 2px 6px rgba(255, 255, 255, 0.2),
+      inset 0 -2px 0 rgba(29, 53, 87, 0.25);
   }
 
-  /* Nav activa: selección azul acolchada */
+  /* Nav activa: pastilla azul clara elevada */
   .nav-active {
     background: var(--color-tint-frosted);
-    border-radius: 9px;
+    border-radius: var(--radius-chip);
     box-shadow:
-      inset 3px 3px 7px rgba(163, 177, 198, 0.35),
-      inset -3px -3px 7px rgba(255, 255, 255, 0.8);
+      6px 7px 14px rgba(29, 53, 87, 0.12),
+      -4px -4px 10px rgba(255, 255, 255, 0.95),
+      inset 0 1.5px 0 rgba(255, 255, 255, 0.95),
+      inset 2px 2px 6px rgba(255, 255, 255, 0.6),
+      inset -3px -3px 8px rgba(29, 53, 87, 0.07);
   }
 
-  /* Superficie hundida (chips de acción secundaria, tarjeta de usuario) */
+  /* Superficie hundida (campos, selección secundaria, avatar de usuario) */
   .clay-inset {
     background: var(--color-tint-frosted);
-    border-radius: 9px;
+    border-radius: var(--radius-chip);
     box-shadow:
-      inset 3px 3px 7px rgba(163, 177, 198, 0.3),
-      inset -3px -3px 7px rgba(255, 255, 255, 0.75);
+      inset 4px 4px 10px rgba(29, 53, 87, 0.12),
+      inset -4px -4px 10px rgba(255, 255, 255, 0.95),
+      inset 0 1px 2px rgba(29, 53, 87, 0.08);
+  }
+
+  /* Campo de formulario: hundido en el lienzo, sin borde duro */
+  .clay-field {
+    background: color-mix(in srgb, var(--color-canvas) 55%, #ffffff);
+    border-radius: var(--radius-control);
+    box-shadow:
+      inset 3px 3px 8px rgba(29, 53, 87, 0.1),
+      inset -3px -3px 8px rgba(255, 255, 255, 0.95),
+      inset 0 1px 2px rgba(29, 53, 87, 0.06);
+  }
+  .clay-field:focus {
+    background: #ffffff;
+    box-shadow:
+      inset 2px 2px 6px rgba(29, 53, 87, 0.08),
+      inset -2px -2px 6px rgba(255, 255, 255, 0.95),
+      0 0 0 3px color-mix(in srgb, var(--color-frosted) 55%, transparent);
+  }
+
+  /* Badge pastilla con relieve mínimo (color por variante) */
+  .clay-badge {
+    border-radius: 999px;
+    box-shadow:
+      2px 3px 6px rgba(29, 53, 87, 0.1),
+      -2px -2px 5px rgba(255, 255, 255, 0.9),
+      inset 0 1px 0 rgba(255, 255, 255, 0.75),
+      inset -1px -1px 3px rgba(29, 53, 87, 0.05);
+  }
+
+  /* Punto de estado con volumen (indicadores de actividad/salud) */
+  .clay-dot {
+    border-radius: 999px;
+    box-shadow:
+      2px 2px 5px rgba(29, 53, 87, 0.22),
+      inset 0 1px 0 rgba(255, 255, 255, 0.55),
+      inset -1px -1.5px 3px rgba(0, 0, 0, 0.18);
   }
 }
 
 /*
   Tokens de motion compartidos (misma curva/duración que Motion en
-  shared/motion.ts). Solo opacidad/transform; nunca `transition: all`.
+  shared/motion.ts). Solo opacidad/transform/box-shadow; nunca `transition: all`.
 */
 :root {
   --ease-soft: cubic-bezier(0.23, 1, 0.32, 1);
-  --duration-soft: 180ms;
-  --duration-press: 150ms;
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --duration-soft: 200ms;
+  --duration-press: 130ms;
 }
 
 /*
@@ -146,18 +264,100 @@
 */
 @media (hover: hover) and (pointer: fine) {
   .clay-press {
-    transition: transform var(--duration-press) var(--ease-soft);
+    transition:
+      transform var(--duration-press) var(--ease-soft),
+      box-shadow var(--duration-press) var(--ease-soft),
+      filter var(--duration-press) var(--ease-soft);
+  }
+  .clay-press:hover {
+    filter: brightness(1.03);
   }
   .clay-press:active {
-    transform: translateY(1px);
+    transform: translateY(2px) scale(0.985);
+    filter: brightness(0.98);
   }
+  /* El CTA se hunde sobre su labio 3D */
+  .clay-cta.clay-press:hover {
+    transform: translateY(-1px);
+    box-shadow:
+      0 6px 0 color-mix(in srgb, var(--color-steel) 55%, var(--color-deep)),
+      12px 18px 30px rgba(69, 123, 157, 0.42),
+      -5px -5px 12px rgba(255, 255, 255, 0.75),
+      inset 0 2px 0 rgba(255, 255, 255, 0.45),
+      inset 2px 2px 6px rgba(255, 255, 255, 0.2),
+      inset 0 -2px 0 rgba(29, 53, 87, 0.25);
+  }
+  .clay-cta.clay-press:active {
+    transform: translateY(3px) scale(0.99);
+    box-shadow:
+      0 2px 0 color-mix(in srgb, var(--color-steel) 55%, var(--color-deep)),
+      6px 8px 16px rgba(69, 123, 157, 0.3),
+      -3px -3px 8px rgba(255, 255, 255, 0.7),
+      inset 0 2px 0 rgba(255, 255, 255, 0.35),
+      inset 0 -1px 0 rgba(29, 53, 87, 0.25);
+  }
+
   .clay-hover-raise {
     transition:
       transform var(--duration-soft) var(--ease-soft),
       box-shadow var(--duration-soft) var(--ease-soft);
   }
   .clay-hover-raise:hover {
+    transform: translateY(-3px);
+  }
+  .clay-card.clay-hover-raise:hover {
+    box-shadow:
+      20px 26px 46px rgba(29, 53, 87, 0.17),
+      8px 10px 18px rgba(29, 53, 87, 0.06),
+      -10px -10px 26px rgba(255, 255, 255, 0.95),
+      inset 0 2px 0 rgba(255, 255, 255, 1),
+      inset 3px 3px 10px rgba(255, 255, 255, 0.85),
+      inset -5px -6px 12px rgba(29, 53, 87, 0.055);
+  }
+  .clay-chip.clay-hover-raise:hover,
+  .clay-tile.clay-hover-raise:hover {
+    box-shadow:
+      10px 12px 22px rgba(29, 53, 87, 0.16),
+      -5px -5px 12px rgba(255, 255, 255, 0.95),
+      inset 0 1.5px 0 rgba(255, 255, 255, 1),
+      inset 2px 2px 6px rgba(255, 255, 255, 0.8),
+      inset -3px -3px 7px rgba(29, 53, 87, 0.06);
+  }
+  .clay-subtle.clay-hover-raise:hover {
     transform: translateY(-2px);
+    box-shadow:
+      6px 8px 16px rgba(29, 53, 87, 0.11),
+      -3px -3px 8px rgba(255, 255, 255, 0.95),
+      inset 0 1.5px 0 rgba(255, 255, 255, 0.95),
+      inset -2px -2px 6px rgba(29, 53, 87, 0.05);
+  }
+
+  /* Fila de lista: se eleva ligeramente al pasar el puntero */
+  .clay-row {
+    transition:
+      transform var(--duration-soft) var(--ease-soft),
+      background-color var(--duration-soft) var(--ease-soft),
+      box-shadow var(--duration-soft) var(--ease-soft);
+  }
+  .clay-row:hover {
+    transform: translateX(2px);
+    background: var(--color-tint-frosted);
+    box-shadow:
+      inset 0 1.5px 0 rgba(255, 255, 255, 0.95),
+      4px 5px 12px rgba(29, 53, 87, 0.09),
+      -3px -3px 8px rgba(255, 255, 255, 0.9);
+  }
+
+  /* Enlaces de nav inactivos: fondo suave al pasar */
+  .nav-idle {
+    transition:
+      background-color var(--duration-soft) var(--ease-soft),
+      color var(--duration-soft) var(--ease-soft),
+      transform var(--duration-soft) var(--ease-soft);
+  }
+  .nav-idle:hover {
+    background: var(--color-tint-steel);
+    transform: translateX(2px);
   }
 }
 
@@ -178,9 +378,9 @@ body {
   (blanco, canvas y tintes claros). Steel Blue sobre superficies claras:
   4.59 en blanco, 4.52 en canvas, 4.20 en tinte frosted.
 */
-:where(a, button, input, textarea, [tabindex]):focus-visible {
+:where(a, button, input, textarea, select, [tabindex]):focus-visible {
   outline: 2px solid var(--color-steel);
-  outline-offset: 1px;
+  outline-offset: 2px;
 }
 
 /* Sobre superficies Steel/Deep el foco pasa a claro (Honeydew: 4.30 sobre steel) */
@@ -198,7 +398,7 @@ body {
   font-size: 11px;
   font-weight: 700;
   color: var(--color-ink-soft);
-  letter-spacing: 0.05em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 
@@ -206,14 +406,48 @@ body {
   0%,
   100% {
     opacity: 0.35;
+    transform: scale(0.9);
   }
   50% {
     opacity: 1;
+    transform: scale(1);
   }
 }
 
 .animate-pulse-soft {
   animation: pulse-soft 1.4s ease-in-out infinite;
+}
+
+/* Flotación lenta para elementos decorativos (barras del hero, icono de estados vacíos) */
+@keyframes float-soft {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+.animate-float-soft {
+  animation: float-soft 3.6s ease-in-out infinite;
+}
+
+/* Barras decorativas del hero: crecen desde la base al entrar */
+@keyframes rise-bar {
+  from {
+    transform: scaleY(0.2);
+    opacity: 0;
+  }
+  to {
+    transform: scaleY(1);
+    opacity: 1;
+  }
+}
+
+.animate-rise-bar {
+  transform-origin: bottom center;
+  animation: rise-bar 620ms var(--ease-spring) both;
 }
 
 /* Feedback táctil y transiciones breves, respetando reduced motion */

@@ -18,7 +18,7 @@ export function LoadingState({ label }: { label: string }) {
     >
       <span
         aria-hidden="true"
-        className="animate-pulse-soft size-3 rounded-full bg-steel shadow-[inset_0_1px_0_rgba(255,255,255,.6)]"
+        className="clay-dot animate-pulse-soft size-4 bg-steel"
       />
       <p className="text-sm font-semibold text-ink">{label}</p>
       <p className="text-xs text-ink-muted">Un momento, por favor.</p>
@@ -39,7 +39,7 @@ export function EmptyState({
     <Card className="flex flex-col items-center gap-5 px-8 py-10 text-center">
       <span
         aria-hidden="true"
-        className="clay clay-chip grid size-14 place-items-center text-steel"
+        className="clay-icon animate-float-soft size-16 rounded-[18px] text-steel"
       >
         <svg
           width="24"
@@ -81,7 +81,7 @@ export function PermissionState({
     >
       <span
         aria-hidden="true"
-        className="grid size-10 place-items-center rounded-[10px] bg-info-bg text-info-fg"
+        className="clay-icon size-12 rounded-[14px] bg-info-bg text-info-fg"
       >
         <svg
           width="18"
@@ -123,7 +123,7 @@ export function ErrorState({
     >
       <span
         aria-hidden="true"
-        className="grid size-10 place-items-center rounded-[10px] bg-danger-bg text-danger-fg"
+        className="clay-icon size-12 rounded-[14px] bg-danger-bg text-danger-fg"
       >
         <svg
           width="18"
@@ -153,48 +153,39 @@ export function ErrorState({
 }
 
 /**
- * Formulario de login por magic link (Supabase Auth): único mecanismo de
- * entrada en producción. No revela si el correo tiene o no una cuenta
- * existente — `signInWithOtp` de Supabase responde igual en ambos casos, así
- * que el estado "enviado" se muestra siempre que la solicitud no falle.
+ * Formulario de login por correo + contraseña (Supabase Auth): único
+ * mecanismo de entrada en producción. Las cuentas se aprovisionan a mano
+ * (no hay self-signup); un error de credenciales se muestra tal cual lo
+ * devuelve Supabase.
  */
-function MagicLinkForm({
-  onSignInWithMagicLink,
+function PasswordForm({
+  onSignInWithPassword,
 }: {
-  onSignInWithMagicLink: (email: string) => Promise<string | null>
+  onSignInWithPassword: (email: string, password: string) => Promise<string | null>
 }) {
   const [email, setEmail] = useState('')
-  const [phase, setPhase] = useState<'idle' | 'sending' | 'sent'>('idle')
+  const [password, setPassword] = useState('')
+  const [phase, setPhase] = useState<'idle' | 'sending'>('idle')
   const [error, setError] = useState<string | null>(null)
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setPhase('sending')
     setError(null)
-    const message = await onSignInWithMagicLink(email)
+    const message = await onSignInWithPassword(email, password)
+    setPhase('idle')
     if (message) {
       setError(message)
-      setPhase('idle')
-    } else {
-      setPhase('sent')
     }
   }
 
-  if (phase === 'sent') {
-    return (
-      <p role="status" className="max-w-xs text-sm leading-relaxed text-ink-muted">
-        Revisa tu correo: te enviamos un enlace para entrar a Content Suite.
-      </p>
-    )
-  }
-
   return (
-    <form onSubmit={handleSubmit} className="flex w-full flex-col gap-2 text-left">
-      <Label htmlFor="magic-link-email" className="sr-only">
+    <form onSubmit={handleSubmit} className="flex w-full flex-col gap-3 text-left">
+      <Label htmlFor="password-login-email" className="sr-only">
         Correo
       </Label>
       <Input
-        id="magic-link-email"
+        id="password-login-email"
         type="email"
         required
         autoComplete="email"
@@ -202,8 +193,20 @@ function MagicLinkForm({
         value={email}
         onChange={(event) => setEmail(event.target.value)}
       />
+      <Label htmlFor="password-login-password" className="sr-only">
+        Contraseña
+      </Label>
+      <Input
+        id="password-login-password"
+        type="password"
+        required
+        autoComplete="current-password"
+        placeholder="Contraseña"
+        value={password}
+        onChange={(event) => setPassword(event.target.value)}
+      />
       <Button type="submit" disabled={phase === 'sending'}>
-        {phase === 'sending' ? 'Enviando…' : 'Enviar enlace de acceso'}
+        {phase === 'sending' ? 'Entrando…' : 'Entrar'}
       </Button>
       {error && (
         <p role="alert" className="text-xs leading-relaxed text-danger-fg">
@@ -216,20 +219,20 @@ function MagicLinkForm({
 
 /**
  * Vista anónima: el visitante sin sesión no ve el shell. El login real
- * (magic link de Supabase Auth) es siempre el mecanismo principal; en
- * desarrollo se ofrece además el acceso rápido a una identidad del mapping
+ * (correo + contraseña de Supabase Auth) es siempre el mecanismo principal;
+ * en desarrollo se ofrece además el acceso rápido a una identidad del mapping
  * ignorado de tokens de dev, autenticada de verdad contra `GET /api/v1/me`.
  */
 export function SessionMissingState<R extends string>({
   devRoles,
   authError,
   onEnterDemo,
-  onSignInWithMagicLink,
+  onSignInWithPassword,
 }: {
   devRoles: readonly R[]
   authError: string | null
   onEnterDemo?: (role: R) => void
-  onSignInWithMagicLink: (email: string) => Promise<string | null>
+  onSignInWithPassword: (email: string, password: string) => Promise<string | null>
 }) {
   const roleLabels: Record<string, string> = {
     creator: 'Creator',
@@ -238,13 +241,13 @@ export function SessionMissingState<R extends string>({
   }
   return (
     <div className="flex min-h-dvh items-center justify-center bg-canvas px-4 py-10">
-      <Card className="flex w-full max-w-md flex-col items-center gap-4 px-8 py-12 text-center">
+      <Card className="flex w-full max-w-md flex-col items-center gap-5 px-8 py-12 text-center">
         <span
           aria-hidden="true"
-          className="clay clay-chip grid size-14 place-items-center text-steel"
+          className="clay-icon animate-float-soft size-16 rounded-[18px] text-steel"
         >
           <svg
-            width="24"
+            width="26"
             height="24"
             viewBox="0 0 24 24"
             fill="none"
@@ -262,11 +265,11 @@ export function SessionMissingState<R extends string>({
             Inicia sesión para entrar al workspace
           </h1>
           <p className="mt-2 text-sm leading-relaxed text-ink-muted">
-            Content Suite requiere una sesión activa. Te enviamos un enlace de acceso a
-            tu correo.
+            Content Suite requiere una sesión activa. Ingresa con el correo y la
+            contraseña de tu cuenta.
           </p>
         </div>
-        <MagicLinkForm onSignInWithMagicLink={onSignInWithMagicLink} />
+        <PasswordForm onSignInWithPassword={onSignInWithPassword} />
         {onEnterDemo && devRoles.length > 0 && (
           <div className="flex w-full flex-col gap-2">
             <p className="text-xs font-semibold uppercase tracking-wide text-ink-soft">

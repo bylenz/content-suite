@@ -50,7 +50,7 @@ function sessionFor(role: 'CREATOR' | 'CONTENT_REVIEWER' | 'VISUAL_REVIEWER'): S
     switchRole: () => {},
     nextDevRole: null,
     authError: null,
-    signInWithMagicLink: async () => null,
+    signInWithPassword: async () => null,
     signOut: async () => {},
     refreshProfile: async () => {},
     switchBrand: () => {},
@@ -154,9 +154,9 @@ describe('DashboardPage — Content Pipeline widget', () => {
 
     // Content Reviewer resalta PENDING_CONTENT_REVIEW (design.md).
     const highlighted = screen.getByText('Pendiente revisión de contenido').closest('li')
-    expect(highlighted?.className).toContain('bg-tint-steel')
+    expect(highlighted?.getAttribute('data-highlighted')).toBe('true')
     const notHighlighted = screen.getByText('Borrador').closest('li')
-    expect(notHighlighted?.className).not.toContain('bg-tint-steel')
+    expect(notHighlighted?.getAttribute('data-highlighted')).toBeNull()
   })
 })
 

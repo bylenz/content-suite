@@ -72,11 +72,11 @@ export function VisualComplianceSection({
       </div>
 
       {currentAsset ? (
-        <div className="overflow-hidden rounded-[9px] border border-line">
+        <div className="clay-inset overflow-hidden rounded-[16px] p-1.5">
           <img
             src={currentAsset.signed_url}
             alt={`Visual v${currentAsset.version}`}
-            className="max-h-[360px] w-full bg-tint-frosted object-contain"
+            className="max-h-[360px] w-full rounded-[12px] bg-tint-frosted object-contain"
           />
         </div>
       ) : (
@@ -86,7 +86,7 @@ export function VisualComplianceSection({
       )}
 
       {latestReview?.decision === 'CHANGES_REQUESTED' && latestReview.feedback && (
-        <div className="clay clay-subtle mt-3 bg-info-bg px-4 py-3.5">
+        <div className="clay clay-tile mt-3 bg-info-bg px-4 py-3.5">
           <p className="text-[11px] font-bold uppercase tracking-wide text-info-fg">
             Feedback del Visual Reviewer
           </p>

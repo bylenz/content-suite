@@ -41,10 +41,8 @@ function createFakeSupabaseClient(initialSession: Session | null) {
   let listener: Listener | null = null
   const unsubscribe = vi.fn()
   const signOut = vi.fn(async () => ({ error: null }))
-  const signInWithOtp = vi.fn<
-    (credentials: { email: string; options?: { emailRedirectTo?: string } }) => Promise<{
-      error: null
-    }>
+  const signInWithPassword = vi.fn<
+    (credentials: { email: string; password: string }) => Promise<{ error: null }>
   >(async () => ({ error: null }))
   const client = {
     auth: {
@@ -54,24 +52,26 @@ function createFakeSupabaseClient(initialSession: Session | null) {
         return { data: { subscription: { unsubscribe } } }
       },
       signOut,
-      signInWithOtp,
+      signInWithPassword,
     },
   } as unknown as SupabaseClient
   return {
     client,
     signOut,
-    signInWithOtp,
+    signInWithPassword,
     emit: (event: AuthChangeEvent, session: Session | null) => listener?.(event, session),
   }
 }
 
 function Probe() {
-  const { status, profile, signInWithMagicLink, signOut } = useSession()
+  const { status, profile, signInWithPassword, signOut } = useSession()
   return (
     <div>
       <span data-testid="status">{status}</span>
       <span data-testid="email">{profile?.email ?? ''}</span>
-      <button onClick={() => void signInWithMagicLink('user@example.com')}>send-link</button>
+      <button onClick={() => void signInWithPassword('user@example.com', 'secret-pass')}>
+        log-in
+      </button>
       <button onClick={() => void signOut()}>sign-out</button>
     </div>
   )
@@ -115,15 +115,18 @@ describe('SessionProvider con Supabase Auth', () => {
     expect(setApiAuthToken).toHaveBeenCalledWith('sb-access-token')
   })
 
-  it('signInWithMagicLink delega en supabase.auth.signInWithOtp con el email dado', async () => {
-    const { client, signInWithOtp } = createFakeSupabaseClient(null)
+  it('signInWithPassword delega en supabase.auth.signInWithPassword con email y contraseña', async () => {
+    const { client, signInWithPassword } = createFakeSupabaseClient(null)
     renderWithProvider(client)
     await waitFor(() => expect(screen.getByTestId('status').textContent).toBe('anonymous'))
 
-    screen.getByText('send-link').click()
+    screen.getByText('log-in').click()
 
-    await waitFor(() => expect(signInWithOtp).toHaveBeenCalledTimes(1))
-    expect(signInWithOtp.mock.calls[0][0]).toMatchObject({ email: 'user@example.com' })
+    await waitFor(() => expect(signInWithPassword).toHaveBeenCalledTimes(1))
+    expect(signInWithPassword.mock.calls[0][0]).toMatchObject({
+      email: 'user@example.com',
+      password: 'secret-pass',
+    })
   })
 
   it('signOut limpia la sesión localmente y llama a supabase.auth.signOut', async () => {

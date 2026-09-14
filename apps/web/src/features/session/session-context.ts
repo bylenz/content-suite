@@ -1,15 +1,14 @@
 import { createContext } from 'react'
 import type { Membership } from '../../shared/api/types'
-import type { DemoRole } from './roles'
 
 /**
  * Boundary de sesión del shell.
  *
  * La sesión se autentica exclusivamente tras un `GET /api/v1/me` 200 con el
- * token adjunto (de Supabase Auth o de una identidad de dev); la identidad y
- * el rol mostrados provienen solo de esa respuesta. Un token inválido,
- * ausente o expirado deja la sesión anónima. El frontend nunca es autoridad
- * de autorización.
+ * access token de Supabase Auth adjunto; la identidad, las membresías y el
+ * rol mostrados provienen solo de esa respuesta (base de datos real). Un
+ * token inválido, ausente o expirado deja la sesión anónima. El frontend
+ * nunca es autoridad de autorización.
  */
 export type SessionStatus = 'initializing' | 'anonymous' | 'authenticated'
 
@@ -29,32 +28,24 @@ export interface SessionProfile {
 export interface SessionContextValue {
   status: SessionStatus
   profile: SessionProfile | null
-  /** Identidad de dev seleccionada (solo selecciona el token adjunto) */
-  selectedRole: DemoRole | null
-  /** Identidades de dev con token disponible; vacío fuera de desarrollo */
-  availableDevRoles: DemoRole[]
-  /** Autentica con la identidad de dev indicada; sin token válido queda anónimo */
-  authenticate: (role: DemoRole) => void
-  /** Cambia de identidad invalidando antes todas las queries de marca */
-  switchRole: (role: DemoRole) => void
-  /** Siguiente identidad de dev en el ciclo del conmutador; null sin sesión */
-  nextDevRole: DemoRole | null
   /** Motivo del último intento fallido de autenticación, si existe */
   authError: string | null
   /**
-   * Envía un magic link de Supabase Auth al correo indicado. Devuelve el
-   * mensaje de error si falla, o `null` si Supabase aceptó la solicitud (no
-   * revela si el correo tiene o no una cuenta existente).
+   * Inicia sesión con correo + contraseña contra Supabase Auth. Devuelve el
+   * mensaje de error si falla (credenciales inválidas, etc.), o `null` si la
+   * sesión se estableció -- el listener de `onAuthStateChange` la recoge.
    */
-  signInWithMagicLink: (email: string) => Promise<string | null>
-  /** Cierra la sesión activa (Supabase Auth o identidad de dev) y vuelve a anónimo */
+  signInWithPassword: (email: string, password: string) => Promise<string | null>
+  /** Cierra la sesión activa de Supabase Auth y vuelve a anónimo */
   signOut: () => Promise<void>
   /**
    * Vuelve a pedir `GET /api/v1/me` con el token actual y actualiza `profile`
-   * en sitio (p. ej. tras crear un workspace nuevo). No cambia `status`; un
-   * fallo aquí no fuerza logout, solo deja el perfil como estaba.
+   * en sitio (p. ej. tras crear un workspace nuevo). Si se indica
+   * `activateBrandId`, esa membresía queda como activa (persistida) y se
+   * limpian las queries de marca. No cambia `status`; un fallo aquí no
+   * fuerza logout, solo deja el perfil como estaba.
    */
-  refreshProfile: () => Promise<void>
+  refreshProfile: (activateBrandId?: string) => Promise<void>
   /**
    * Cambia la marca activa entre las membresías ya presentes en `profile`
    * (nunca pide una nueva autenticación: es la misma identidad, otra marca).

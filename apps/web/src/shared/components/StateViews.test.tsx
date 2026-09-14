@@ -5,42 +5,42 @@ import { SessionMissingState } from './StateViews'
 afterEach(cleanup)
 
 describe('SessionMissingState', () => {
-  it('envía el magic link y muestra el estado "revisa tu correo" tras el envío', async () => {
-    const onSignInWithMagicLink = vi.fn().mockResolvedValue(null)
+  it('envía email y contraseña a onSignInWithPassword al enviar el formulario', async () => {
+    const onSignInWithPassword = vi.fn().mockResolvedValue(null)
     render(
       <SessionMissingState
         devRoles={[]}
         authError={null}
-        onSignInWithMagicLink={onSignInWithMagicLink}
+        onSignInWithPassword={onSignInWithPassword}
       />,
     )
 
     fireEvent.change(screen.getByLabelText('Correo'), { target: { value: 'user@example.com' } })
-    fireEvent.click(screen.getByRole('button', { name: 'Enviar enlace de acceso' }))
+    fireEvent.change(screen.getByLabelText('Contraseña'), { target: { value: 'secret-pass' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Entrar' }))
 
-    expect(onSignInWithMagicLink).toHaveBeenCalledWith('user@example.com')
     await waitFor(() =>
-      expect(screen.getByRole('status').textContent).toMatch(/Revisa tu correo/),
+      expect(onSignInWithPassword).toHaveBeenCalledWith('user@example.com', 'secret-pass'),
     )
   })
 
-  it('muestra el error del envío sin quedarse en el estado "revisa tu correo"', async () => {
-    const onSignInWithMagicLink = vi.fn().mockResolvedValue('Demasiados intentos, espera un momento.')
+  it('muestra el error de credenciales devuelto por Supabase', async () => {
+    const onSignInWithPassword = vi.fn().mockResolvedValue('Credenciales inválidas.')
     render(
       <SessionMissingState
         devRoles={[]}
         authError={null}
-        onSignInWithMagicLink={onSignInWithMagicLink}
+        onSignInWithPassword={onSignInWithPassword}
       />,
     )
 
     fireEvent.change(screen.getByLabelText('Correo'), { target: { value: 'user@example.com' } })
-    fireEvent.click(screen.getByRole('button', { name: 'Enviar enlace de acceso' }))
+    fireEvent.change(screen.getByLabelText('Contraseña'), { target: { value: 'wrong' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Entrar' }))
 
     await waitFor(() =>
-      expect(screen.getByRole('alert').textContent).toMatch(/Demasiados intentos/),
+      expect(screen.getByRole('alert').textContent).toMatch(/Credenciales inválidas/),
     )
-    expect(screen.queryByRole('status')).toBeNull()
   })
 
   it('en desarrollo, muestra el login real y los accesos de identidad de dev a la vez', () => {
@@ -49,7 +49,7 @@ describe('SessionMissingState', () => {
         devRoles={['creator']}
         authError={null}
         onEnterDemo={vi.fn()}
-        onSignInWithMagicLink={vi.fn().mockResolvedValue(null)}
+        onSignInWithPassword={vi.fn().mockResolvedValue(null)}
       />,
     )
 
@@ -62,7 +62,7 @@ describe('SessionMissingState', () => {
       <SessionMissingState
         devRoles={[]}
         authError={null}
-        onSignInWithMagicLink={vi.fn().mockResolvedValue(null)}
+        onSignInWithPassword={vi.fn().mockResolvedValue(null)}
       />,
     )
 

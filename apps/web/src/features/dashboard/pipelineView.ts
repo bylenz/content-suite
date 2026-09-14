@@ -32,3 +32,18 @@ export const ROLE_PIPELINE_HIGHLIGHT: Record<BrandRole, CreativeWorkflowStatus[]
   CONTENT_REVIEWER: ['PENDING_CONTENT_REVIEW'],
   VISUAL_REVIEWER: ['PENDING_VISUAL_REVIEW'],
 }
+
+/** Tono semántico de cada estado (tiles clay del dashboard). Deriva del
+ * significado del estado, no del rol: pendientes en ámbar, cambios
+ * solicitados en strawberry, aprobados en verde, borrador en steel. */
+export type PipelineTone = 'info' | 'warning' | 'danger' | 'success'
+
+export const WORKFLOW_STATUS_TONE: Record<CreativeWorkflowStatus, PipelineTone> = {
+  DRAFT: 'info',
+  PENDING_CONTENT_REVIEW: 'warning',
+  CONTENT_CHANGES_REQUESTED: 'danger',
+  CONTENT_APPROVED: 'success',
+  PENDING_VISUAL_REVIEW: 'warning',
+  VISUAL_CHANGES_REQUESTED: 'danger',
+  FINAL_APPROVED: 'success',
+}

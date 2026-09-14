@@ -27,7 +27,7 @@ function TagList({ items, tone = 'neutral' }: { items: string[]; tone?: 'neutral
       {items.map((item) => (
         <span
           key={item}
-          className={`rounded-[7px] px-2.5 py-1 text-[12.5px] font-semibold ${toneClass}`}
+          className={`clay-badge px-3 py-1 text-[12.5px] font-semibold ${toneClass}`}
         >
           {item}
         </span>
@@ -44,7 +44,7 @@ function Card({
   children: React.ReactNode
 }) {
   return (
-    <section className="clay clay-subtle flex flex-col gap-4 p-6">
+    <section className="clay clay-card flex flex-col gap-4 p-6">
       <h3 className="text-[14px] font-bold text-ink">{title}</h3>
       {children}
     </section>
@@ -88,7 +88,7 @@ function VoiceView({ document }: { document: BrandDnaDocument }) {
         </div>
       </div>
       <div className="grid gap-4 sm:grid-cols-2">
-        <div className="rounded-[10px] bg-success-bg p-4">
+        <div className="clay-tile bg-success-bg p-4">
           <p className="text-[11px] font-bold uppercase tracking-[0.05em] text-success-fg">Hacer</p>
           <ul className="mt-2 flex flex-col gap-2">
             {section.do_examples.map((example) => (
@@ -98,7 +98,7 @@ function VoiceView({ document }: { document: BrandDnaDocument }) {
             ))}
           </ul>
         </div>
-        <div className="rounded-[10px] bg-danger-bg p-4">
+        <div className="clay-tile bg-danger-bg p-4">
           <p className="text-[11px] font-bold uppercase tracking-[0.05em] text-danger-fg">
             No hacer
           </p>
@@ -121,7 +121,7 @@ function CommunicationView({ document }: { document: BrandDnaDocument }) {
     <Card title={sectionTitle('communication')}>
       <div className="flex flex-col gap-3">
         {section.message_pillars.map((pillar) => (
-          <div key={pillar.name} className="rounded-[9px] bg-tint-steel px-4 py-3">
+          <div key={pillar.name} className="clay-tile bg-tint-steel px-4 py-3">
             <p className="text-[13.5px] font-semibold text-ink">{pillar.name}</p>
             <p className="mt-1 text-[13px] leading-relaxed text-ink-muted">{pillar.description}</p>
           </div>

@@ -64,13 +64,13 @@ export function BrandAuditQueuePage() {
           description="Cuando el Creator suba un visual sobre un ítem con contenido aprobado, aparecerá aquí."
         />
       ) : (
-        <Card className="p-2">
+        <Card className="p-3">
           <ul>
             {queue.data.items.map((row) => (
               <li key={row.item.id}>
                 <Link
                   to={`/brand-audit/${row.item.id}`}
-                  className="flex flex-wrap items-center justify-between gap-3 rounded-[9px] px-3 py-3 transition-colors hover:bg-tint-steel"
+                  className="clay-row flex flex-wrap items-center justify-between gap-3 rounded-[16px] px-4 py-3.5"
                 >
                   <div className="min-w-0">
                     <p className="truncate text-[13.5px] font-semibold text-ink">{row.item.title}</p>

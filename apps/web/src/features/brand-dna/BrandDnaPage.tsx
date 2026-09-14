@@ -39,7 +39,7 @@ function VersionRow({ version }: { version: BrandDnaVersionSummary }) {
     <motion.li variants={surfaceItem}>
       <Link
         to={`/brand-dna/versions/${version.version}`}
-        className="clay clay-subtle flex flex-wrap items-center justify-between gap-3 px-4.5 py-3.5 transition-colors hover:bg-tint-steel"
+        className="clay clay-subtle clay-hover-raise flex flex-wrap items-center justify-between gap-3 px-4.5 py-3.5"
       >
         <div className="min-w-0">
           <p className="flex items-center gap-2 text-[13.5px] font-semibold text-ink">
@@ -217,7 +217,7 @@ export function BrandDnaPage() {
             <Button
               asChild
               variant="outline"
-              className="border-steel/30 bg-tint-frosted px-4 text-[13px] text-steel"
+              className="px-4 text-[13px] text-steel"
             >
               <Link to="/brand-dna/edit">Editar borrador</Link>
             </Button>
@@ -248,7 +248,7 @@ export function BrandDnaPage() {
             animate="show"
             exit="exit"
             role="status"
-            className="clay clay-subtle bg-success-bg px-4 py-3 text-[13px] font-medium text-success-fg"
+            className="clay clay-tile bg-success-bg px-4 py-3 text-[13px] font-medium text-success-fg"
           >
             {publishSuccess}
           </motion.p>
@@ -261,7 +261,7 @@ export function BrandDnaPage() {
             animate="show"
             exit="exit"
             role="alert"
-            className="clay clay-subtle bg-warning-bg px-4 py-3 text-[13px] font-medium text-warning-fg"
+            className="clay clay-tile bg-warning-bg px-4 py-3 text-[13px] font-medium text-warning-fg"
           >
             {publishError}
           </motion.p>
@@ -274,7 +274,7 @@ export function BrandDnaPage() {
             animate="show"
             exit="exit"
             role="status"
-            className="clay clay-subtle bg-success-bg px-4 py-3 text-[13px] font-medium text-success-fg"
+            className="clay clay-tile bg-success-bg px-4 py-3 text-[13px] font-medium text-success-fg"
           >
             {syncSuccess}
           </motion.p>
@@ -287,7 +287,7 @@ export function BrandDnaPage() {
             animate="show"
             exit="exit"
             role="alert"
-            className="clay clay-subtle bg-danger-bg px-4 py-3 text-[13px] font-medium text-danger-fg"
+            className="clay clay-tile bg-danger-bg px-4 py-3 text-[13px] font-medium text-danger-fg"
           >
             {syncError}
           </motion.p>
@@ -297,7 +297,7 @@ export function BrandDnaPage() {
       {activeKnowledge && active && (
         <motion.div
           variants={surfaceItem}
-          className={`flex flex-wrap items-center justify-between gap-3 rounded-[10px] px-4 py-3 ${activeKnowledge.banner}`}
+          className={`clay-tile flex flex-wrap items-center justify-between gap-3 px-4 py-3 ${activeKnowledge.banner}`}
           role="status"
         >
           <p className="min-w-0 text-[13px] font-medium">
@@ -319,7 +319,7 @@ export function BrandDnaPage() {
                 type="button"
                 size="sm"
                 variant="outline"
-                className="border-current/30 bg-transparent px-3.5"
+                className="px-3.5 text-current"
                 onClick={() => void onSyncKnowledge()}
                 disabled={syncKnowledge.isPending || active.knowledge_status === 'SYNCING'}
               >
@@ -334,7 +334,7 @@ export function BrandDnaPage() {
       {isCreator && draft && active && (
         <motion.p
           variants={surfaceItem}
-          className="rounded-[10px] bg-tint-frosted px-4 py-3 text-[13px] text-ink-muted"
+          className="clay-tile bg-tint-frosted px-4 py-3 text-[13px] text-ink-muted"
           role="status"
         >
           Estás viendo tu borrador v{draft.version}. La versión activa publicada (v{active.version})
@@ -354,10 +354,10 @@ export function BrandDnaPage() {
               type="button"
               onClick={() => setPanel(item.id)}
               aria-current={panel === item.id}
-              className={`whitespace-nowrap rounded-[7px] px-2.5 py-2 text-left text-[13.5px] ${
+              className={`whitespace-nowrap rounded-[12px] px-3 py-2 text-left text-[13.5px] ${
                 panel === item.id
                   ? 'clay nav-active font-semibold text-ink'
-                  : 'font-medium text-ink-muted hover:bg-tint-steel'
+                  : 'nav-idle font-medium text-ink-muted'
               }`}
             >
               {item.label}
@@ -382,12 +382,12 @@ export function BrandDnaPage() {
                     {SECTIONS.map((section) => (
                       <div
                         key={section.key}
-                        className="clay clay-chip px-3.5 py-3"
+                        className="clay clay-tile clay-hover-raise bg-tint-frosted px-3.5 py-3"
                       >
-                        <p className="text-[19px] font-bold text-ink">
+                        <p className="text-[22px] font-extrabold leading-none text-ink">
                           {displayed.section_counts[section.key] ?? 0}
                         </p>
-                        <p className="text-[11px] text-ink-soft">{section.label}</p>
+                        <p className="mt-1 text-[11px] text-ink-soft">{section.label}</p>
                       </div>
                     ))}
                   </div>

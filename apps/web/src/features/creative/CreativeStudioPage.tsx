@@ -65,7 +65,7 @@ export function CreativeStudioPage() {
             <Link
               key={type}
               to={`/creative/new?type=${type}`}
-              className="clay clay-card min-w-[220px] flex-1 px-5 py-4 transition-colors hover:bg-tint-frosted"
+              className="clay clay-card clay-hover-raise clay-press min-w-[220px] flex-1 px-5 py-5"
             >
               <p className="text-[14.5px] font-bold text-ink">{TYPE_VIEW[type].label}</p>
               <p className="mt-1.5 text-[12.5px] leading-relaxed text-ink-muted">
@@ -97,7 +97,7 @@ export function CreativeStudioPage() {
             )}
           </EmptyState>
         ) : (
-          <Card className="p-2">
+          <Card className="p-3">
             <ul>
               {items.data.items.map((item) => (
                 <ItemRow key={item.id} item={item} />
@@ -117,7 +117,7 @@ function ItemRow({ item }: { item: ItemSummary }) {
     <li>
       <Link
         to={`/creative/items/${item.id}`}
-        className="flex flex-wrap items-center justify-between gap-3 rounded-[9px] px-3 py-3 transition-colors hover:bg-tint-steel"
+        className="clay-row flex flex-wrap items-center justify-between gap-3 rounded-[16px] px-4 py-3.5"
       >
         <div className="min-w-0">
           <p className="truncate text-[13.5px] font-semibold text-ink">{item.title}</p>

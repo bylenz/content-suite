@@ -32,7 +32,7 @@ const sessionValue: SessionContextValue = {
   switchRole: () => {},
   nextDevRole: null,
   authError: null,
-  signInWithMagicLink: async () => null,
+  signInWithPassword: async () => null,
   signOut: async () => {},
   refreshProfile: async () => {},
   switchBrand: () => {},

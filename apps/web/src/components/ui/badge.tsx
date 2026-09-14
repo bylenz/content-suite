@@ -4,11 +4,12 @@ import { cn } from "cn"
 
 /*
   Primitive Badge source-owned (shadcn): estados semánticos derivados
-  exclusivamente de la paleta canónica (tokens de index.css). `deep` es el
-  estado activo de la referencia (Honeydew + Deep Space Blue).
+  exclusivamente de la paleta canónica (tokens de index.css). Pastilla con
+  relieve mínimo (`clay-badge`). `deep` es el estado activo de la referencia
+  (Honeydew + Deep Space Blue).
 */
 const badgeVariants = cva(
-  "inline-flex w-fit shrink-0 items-center gap-1.5 rounded-md px-2.5 py-1 text-[11.5px] font-semibold whitespace-nowrap",
+  "clay-badge inline-flex w-fit shrink-0 items-center gap-1.5 px-3 py-1 text-[11.5px] font-semibold whitespace-nowrap",
   {
     variants: {
       variant: {
@@ -21,7 +22,7 @@ const badgeVariants = cva(
       },
       size: {
         default: "",
-        sm: "gap-0 px-2 py-0.5 text-[11px]",
+        sm: "gap-1 px-2.5 py-0.5 text-[11px]",
       },
     },
     defaultVariants: {
