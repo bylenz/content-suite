@@ -6,7 +6,7 @@ exclusivity are rejected — never passed through. `TraceSummary` is the bounded
 allowlist that may travel in tracing spans (no free-text fields by design).
 """
 
-from typing import Annotated, Literal, Self
+from typing import Annotated, Any, Literal, Self
 
 from pydantic import (
     BaseModel,
@@ -138,6 +138,29 @@ class CreativeOutput(_Strict):
     structured_sections: list[CreativeSection] | None = Field(default=None, max_length=50)
     applied_rule_ids: list[RuleRef] = Field(max_length=50)
 
+    @classmethod
+    def normalize_provider_payload(cls, data: dict[str, Any]) -> dict[str, Any]:
+        """Collapse provider quirks before validating a *model* payload.
+
+        OpenAI strict json_schema mode forces every key to be present, so the
+        model sometimes fills both bodies (e.g. a video script flattened into
+        `content` next to its `structured_sections`) or sends `""` / `[]` for
+        the body it did not use. Prefer `structured_sections` when both carry
+        data and treat empty values as absent. Only the capability runner calls
+        this: human edits through the API keep the strict exactly-one contract.
+        """
+        content = data.get("content")
+        sections = data.get("structured_sections")
+        if content is not None and not str(content).strip():
+            data = {**data, "content": None}
+            content = None
+        if sections is not None and len(sections) == 0:
+            data = {**data, "structured_sections": None}
+            sections = None
+        if content is not None and sections is not None:
+            data = {**data, "content": None}
+        return data
+
     @model_validator(mode="after")
     def _exactly_one_body_and_unique_rules(self) -> Self:
         if (self.content is None) == (self.structured_sections is None):
@@ -209,18 +232,25 @@ def build_trace_summary(
     """Derive the bounded span summary from a validated output."""
     if isinstance(output, CreativeOutput):
         return TraceSummary(
-            contract="CreativeOutput", ok=True, content_type=output.content_type,
-            check_count=0, finding_count=0,
+            contract="CreativeOutput",
+            ok=True,
+            content_type=output.content_type,
+            check_count=0,
+            finding_count=0,
         )
     if isinstance(output, ConsistencyResult):
         return TraceSummary(
-            contract="ConsistencyResult", ok=True,
-            check_count=len(output.checks), finding_count=len(output.findings),
+            contract="ConsistencyResult",
+            ok=True,
+            check_count=len(output.checks),
+            finding_count=len(output.findings),
         )
     if isinstance(output, BrandDnaDocument):
         # No checks/findings apply to a generated document: the bounded floor (0/0).
         return TraceSummary(contract="BrandDnaDocument", ok=True, check_count=0, finding_count=0)
     return TraceSummary(
-        contract="VisualAuditResult", ok=True,
-        check_count=len(output.checks), finding_count=len(output.findings),
+        contract="VisualAuditResult",
+        ok=True,
+        check_count=len(output.checks),
+        finding_count=len(output.findings),
     )

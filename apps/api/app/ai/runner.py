@@ -28,6 +28,7 @@ from app.observability.ports import CapabilitySpan, Tracer
 
 logger = logging.getLogger(__name__)
 
+
 @dataclass(frozen=True, slots=True)
 class RunMetadata:
     prompt_version: str
@@ -86,6 +87,9 @@ async def run_capability[
             raw = await adapter.analyze_structured(
                 instructions=spec.template, prompt=request, image_ref=image_ref
             )
+        normalize = getattr(contract, "normalize_provider_payload", None)
+        if normalize is not None and isinstance(raw, dict):
+            raw = normalize(raw)
         try:
             output = contract.model_validate(raw)
         except ValidationError as exc:

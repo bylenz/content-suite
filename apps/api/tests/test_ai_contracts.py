@@ -145,24 +145,33 @@ def test_results_reject_missing_and_malformed_fields() -> None:
 
 def test_trace_summary_enforces_allowlist_and_content_type_rules() -> None:
     creative = TraceSummary(
-        contract="CreativeOutput", ok=True, content_type="video_script",
-        check_count=0, finding_count=0,
+        contract="CreativeOutput",
+        ok=True,
+        content_type="video_script",
+        check_count=0,
+        finding_count=0,
     )
     assert creative.ok
     with pytest.raises(ValidationError):
         TraceSummary(contract="CreativeOutput", ok=True, check_count=0, finding_count=0)
     with pytest.raises(ValidationError):
         TraceSummary(
-            contract="ConsistencyResult", ok=True, content_type="video_script",
-            check_count=1, finding_count=1,
+            contract="ConsistencyResult",
+            ok=True,
+            content_type="video_script",
+            check_count=1,
+            finding_count=1,
         )
     with pytest.raises(ValidationError):
         TraceSummary(contract="ConsistencyResult", ok=True, check_count=101, finding_count=0)
     with pytest.raises(ValidationError):
         TraceSummary.model_validate(
             {
-                "contract": "ConsistencyResult", "ok": True, "check_count": 1,
-                "finding_count": 1, "note": "free text",
+                "contract": "ConsistencyResult",
+                "ok": True,
+                "check_count": 1,
+                "finding_count": 1,
+                "note": "free text",
             }
         )
 
@@ -170,8 +179,11 @@ def test_trace_summary_enforces_allowlist_and_content_type_rules() -> None:
 def test_build_trace_summary_derives_counts_per_contract() -> None:
     creative_summary = build_trace_summary(CreativeOutput.model_validate(creative_payload()))
     assert creative_summary.model_dump() == {
-        "contract": "CreativeOutput", "ok": True, "content_type": "product_description",
-        "check_count": 0, "finding_count": 0,
+        "contract": "CreativeOutput",
+        "ok": True,
+        "content_type": "product_description",
+        "check_count": 0,
+        "finding_count": 0,
     }
     consistency_summary = build_trace_summary(
         ConsistencyResult.model_validate(
@@ -183,3 +195,54 @@ def test_build_trace_summary_derives_counts_per_contract() -> None:
     audit_summary = build_trace_summary(VisualAuditResult.model_validate(consistency_payload()))
     assert audit_summary.contract == "VisualAuditResult"
     assert audit_summary.content_type is None
+
+
+def test_creative_output_prefers_sections_when_provider_fills_both_bodies() -> None:
+    """OpenAI strict mode may flatten a script into `content` next to `structured_sections`."""
+    raw = {
+        "content_type": "video_script",
+        "title": "Reel",
+        "content": "[INTRO] flattened copy of the script",
+        "structured_sections": [{"heading": "Intro", "body": "Taza humeante"}],
+        "applied_rule_ids": ["r1"],
+    }
+    output = CreativeOutput.model_validate(CreativeOutput.normalize_provider_payload(raw))
+    assert output.content is None
+    assert output.structured_sections is not None and len(output.structured_sections) == 1
+
+
+def test_creative_output_treats_empty_bodies_as_absent() -> None:
+    raw = {
+        "content_type": "product_description",
+        "title": "Ficha",
+        "content": "Texto real",
+        "structured_sections": [],
+        "applied_rule_ids": [],
+    }
+    assert (
+        CreativeOutput.model_validate(
+            CreativeOutput.normalize_provider_payload(raw)
+        ).structured_sections
+        is None
+    )
+    raw = {
+        "content_type": "video_script",
+        "title": "Reel",
+        "content": "   ",
+        "structured_sections": [{"heading": "Intro", "body": "Taza"}],
+        "applied_rule_ids": [],
+    }
+    assert (
+        CreativeOutput.model_validate(CreativeOutput.normalize_provider_payload(raw)).content
+        is None
+    )
+    with pytest.raises(ValidationError):
+        CreativeOutput.model_validate(
+            {
+                "content_type": "video_script",
+                "title": "Reel",
+                "content": "",
+                "structured_sections": [],
+                "applied_rule_ids": [],
+            }
+        )

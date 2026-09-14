@@ -227,3 +227,26 @@ def test_noop_tracer_integration_returns_none_trace_id() -> None:
         )
     )
     assert result.metadata.trace_id is None
+
+
+def test_runner_normalizes_provider_payload_that_fills_both_bodies() -> None:
+    """Strict-mode providers may fill both bodies; the runner keeps structured_sections."""
+    both = {
+        "content_type": "video_script",
+        "title": "Reel",
+        "content": "[INTRO] flattened script",
+        "structured_sections": [{"heading": "Intro", "body": "Taza humeante"}],
+        "applied_rule_ids": ["r1"],
+    }
+    result = asyncio.run(
+        run_capability(
+            prompt_id="creative.video_script.v1",
+            adapter=FakeTextModel(structured_output=both),
+            tracer=NoopTracer(),
+            contract=CreativeOutput,
+            request="brief",
+            entity="creative_item:x",
+        )
+    )
+    assert result.output.content is None
+    assert result.output.structured_sections is not None
