@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { useActiveBrand } from '../session/useActiveBrand'
-import { ORIGIN_VIEW, TYPE_VIEW } from '../creative/view'
+import { ORIGIN_VIEW, TYPE_VIEW, WORKFLOW_STATUS_VIEW } from '../creative/view'
 import { VersionOutputView } from '../creative/VersionOutputView'
 import { useApprove, useRequestChanges, useReviewDetail, useReviewHistory } from './api'
 import { RequestChangesForm } from './RequestChangesForm'
@@ -20,6 +20,9 @@ const EVENT_LABELS: Record<string, string> = {
   SUBMITTED: 'Enviado a revisión',
   CONTENT_APPROVED: 'Contenido aprobado',
   CONTENT_CHANGES_REQUESTED: 'Cambios solicitados',
+  VISUAL_UPLOADED: 'Visual subido',
+  VISUAL_CHANGES_REQUESTED: 'Cambios visuales solicitados',
+  FINAL_APPROVED: 'Aprobado final',
 }
 
 /**
@@ -89,8 +92,8 @@ export function ApprovalDetailPage() {
         </Link>
         <div className="mt-1.5 flex flex-wrap items-center gap-2.5">
           <h1 className="text-2xl font-bold tracking-tight text-ink">{data.item.title}</h1>
-          <Badge variant={pending ? 'warning' : 'neutral'}>
-            {pending ? 'Pendiente de decisión' : data.item.workflow_status}
+          <Badge variant={pending ? 'warning' : WORKFLOW_STATUS_VIEW[data.item.workflow_status].badge}>
+            {pending ? 'Pendiente de decisión' : WORKFLOW_STATUS_VIEW[data.item.workflow_status].label}
           </Badge>
         </div>
         <p className="mt-1 text-[12.5px] text-ink-soft">{TYPE_VIEW[data.item.type].label}</p>
