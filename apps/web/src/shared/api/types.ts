@@ -182,6 +182,29 @@ export interface TraceListResponse {
 }
 
 /*
+ * Brand Assets (change 012): logo primario/alternativo (slot único,
+ * reemplazable) y referencias visuales (colección sin límite). El backend
+ * nunca expone `storage_path`; `signed_url` se calcula en el borde de la
+ * respuesta y es de corta duración.
+ */
+
+export type BrandAssetType = 'PRIMARY_LOGO' | 'ALT_LOGO' | 'VISUAL_REFERENCE'
+
+export interface BrandAssetOut {
+  id: string
+  brand_id: string
+  brand_dna_version_id: string | null
+  type: BrandAssetType
+  signed_url: string
+  metadata: Record<string, unknown>
+  created_at: string
+}
+
+export interface BrandAssetList {
+  assets: BrandAssetOut[]
+}
+
+/*
  * Dashboard Activity (change 014): Content Pipeline breakdown y feed de
  * Recent Activity, ambos derivados de tablas ya existentes, sin agregación
  * multi-marca (`brand_id` siempre explícito).

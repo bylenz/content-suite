@@ -10,15 +10,25 @@ import { crossfadeTransition, feedbackItem, surfaceGroup, surfaceItem } from '..
 import { EmptyState, ErrorState, LoadingState, PermissionState } from '../../shared/components/StateViews'
 import { useActiveBrand } from '../session/useActiveBrand'
 import { useBrandDna, useBrandDnaVersions, usePublishDraft, useSyncKnowledge } from './api'
+import { BrandAssetsPanel } from './BrandAssetsPanel'
 import { DocumentSectionView } from './DocumentSectionView'
 import { SECTIONS } from './sections'
 import { formatDate, KNOWLEDGE_STATUS_VIEW, VERSION_STATUS_VIEW } from './statusView'
 
-type Panel = 'overview' | 'identity' | 'voice' | 'communication' | 'visual_rules' | 'restrictions' | 'versions'
+type Panel =
+  | 'overview'
+  | 'identity'
+  | 'voice'
+  | 'communication'
+  | 'visual_rules'
+  | 'restrictions'
+  | 'assets'
+  | 'versions'
 
 const PANEL_ITEMS: { id: Panel; label: string }[] = [
   { id: 'overview', label: 'Resumen' },
   ...SECTIONS.map((section) => ({ id: section.key as Panel, label: section.label })),
+  { id: 'assets', label: 'Brand Assets' },
   { id: 'versions', label: 'Versiones' },
 ]
 
@@ -387,8 +397,12 @@ export function BrandDnaPage() {
                 </div>
               )}
 
-              {panel !== 'overview' && panel !== 'versions' && displayed && (
+              {panel !== 'overview' && panel !== 'assets' && panel !== 'versions' && displayed && (
                 <DocumentSectionView section={panel} document={displayed.document} />
+              )}
+
+              {panel === 'assets' && (
+                <BrandAssetsPanel brandId={brand.brandId} isCreator={isCreator} />
               )}
 
               {panel === 'versions' && (
