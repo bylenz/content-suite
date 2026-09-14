@@ -5,6 +5,7 @@ from logging.config import fileConfig
 from sqlalchemy import engine_from_config, pool
 
 from alembic import context
+from app.brand_assets import models as brand_assets_models  # noqa: F401  (register models)
 from app.brand_dna import models as brand_dna_models  # noqa: F401  (register models)
 from app.creative import models as creative_models  # noqa: F401  (register models)
 from app.db import Base

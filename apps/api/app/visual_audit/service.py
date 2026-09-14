@@ -28,6 +28,7 @@ from app.ai.contracts import Check, Finding, TraceSummary, VisualAuditResult
 from app.ai.errors import AIOutputValidationError
 from app.ai.ports import EmbeddingModel, VisionModel
 from app.ai.runner import run_capability
+from app.brand_assets import service as brand_assets_service
 from app.config import Settings
 from app.creative import repository as creative_repository
 from app.creative.models import CreativeItem, CreativeWorkflowStatus
@@ -366,6 +367,18 @@ async def run_audit(
     image_ref = await storage.signed_url(
         path=asset.storage_path, ttl_seconds=settings.storage_signed_url_ttl_seconds
     )
+    # Cross-consumption (012-brand-assets task 3.1): resolve the brand's
+    # PRIMARY_LOGO as comparison context through brand-assets' own read path
+    # -- this module never opens its own storage access for it, it reuses the
+    # exact `storage`/`settings` already injected here. Best-effort: a brand
+    # with no PRIMARY_LOGO yet (or a lookup failure) never blocks the audit.
+    try:
+        primary_logo = await brand_assets_service.get_primary_logo(
+            session, item.brand_id, storage=storage, settings=settings
+        )
+    except Exception as exc:
+        logger.warning("Brand asset lookup failed during visual audit: %s", type(exc).__name__)
+        primary_logo = None
     request = _compose_audit_request(item, context)
     try:
         run = await run_capability(
@@ -388,6 +401,10 @@ async def run_audit(
         "brand_dna_version_id": str(context.brand_dna_version_id),
         "mandatory_rule_count": len(context.mandatory),
         "semantic_rule_count": len(context.semantic),
+        # Durable reference (never the transient signed URL) evidencing the
+        # brand-assets read path was consulted; null when the brand has no
+        # PRIMARY_LOGO yet.
+        "brand_primary_logo_asset_id": str(primary_logo.id) if primary_logo else None,
     }
     audit = repository.insert_audit(
         session,
