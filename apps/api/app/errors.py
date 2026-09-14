@@ -22,6 +22,13 @@ from app.creative.policies import InvalidWorkflowTransitionError as CreativeTran
 from app.governance.policies import InvalidWorkflowTransitionError as GovernanceTransitionError
 from app.identity.policies import PermissionDeniedError
 from app.knowledge.errors import KnowledgeNotAvailableError, SyncConflictError
+from app.storage.errors import (
+    StorageNotConfiguredError,
+    StorageUnavailableError,
+    StorageValidationError,
+)
+from app.visual_audit.errors import VisionOutputInvalidError
+from app.visual_audit.policies import InvalidWorkflowTransitionError as VisualAuditTransitionError
 
 STATUS_CODE_MAP = {
     400: "BAD_REQUEST",
@@ -85,7 +92,13 @@ async def permission_denied_handler(request: Request, exc: Exception) -> JSONRes
 
 
 async def invalid_transition_handler(request: Request, exc: Exception) -> JSONResponse:
-    assert isinstance(exc, BrandDnaTransitionError | CreativeTransitionError | GovernanceTransitionError)
+    assert isinstance(
+        exc,
+        BrandDnaTransitionError
+        | CreativeTransitionError
+        | GovernanceTransitionError
+        | VisualAuditTransitionError,
+    )
     return envelope(409, "INVALID_WORKFLOW_TRANSITION", str(exc), exc.details)
 
 
@@ -113,6 +126,29 @@ async def knowledge_not_available_handler(request: Request, exc: Exception) -> J
     return envelope(503, "KNOWLEDGE_NOT_AVAILABLE", message, {})
 
 
+async def storage_unavailable_handler(request: Request, exc: Exception) -> JSONResponse:
+    # Covers both StorageNotConfiguredError (adapter is None) and
+    # StorageUnavailableError (configured adapter failed at runtime): both
+    # answer a controlled 503, sanitized to the operation name only (design
+    # D2/private-storage spec: no fallback, no partial objects).
+    assert isinstance(exc, StorageNotConfiguredError | StorageUnavailableError)
+    return envelope(503, "STORAGE_UNAVAILABLE", str(exc), {"operation": exc.operation})
+
+
+async def storage_validation_handler(request: Request, exc: Exception) -> JSONResponse:
+    # File failed size/magic-byte validation (design D3): 422 before any
+    # storage call or DB write; the sanitized reason never includes raw bytes.
+    assert isinstance(exc, StorageValidationError)
+    return envelope(422, "VALIDATION_ERROR", str(exc), {"reason": exc.reason})
+
+
+async def vision_output_invalid_handler(request: Request, exc: Exception) -> JSONResponse:
+    # Sanitized 503 (design D6): the Vision model's raw output never reaches
+    # the response; nothing is persisted when this fires.
+    assert isinstance(exc, VisionOutputInvalidError)
+    return envelope(503, "VISION_OUTPUT_INVALID", str(exc), {})
+
+
 def register_handlers(app: FastAPI) -> None:
     app.add_exception_handler(StarletteHTTPException, http_exception_handler)
     app.add_exception_handler(RequestValidationError, request_validation_handler)
@@ -120,8 +156,13 @@ def register_handlers(app: FastAPI) -> None:
     app.add_exception_handler(BrandDnaTransitionError, invalid_transition_handler)
     app.add_exception_handler(CreativeTransitionError, invalid_transition_handler)
     app.add_exception_handler(GovernanceTransitionError, invalid_transition_handler)
+    app.add_exception_handler(VisualAuditTransitionError, invalid_transition_handler)
     app.add_exception_handler(SyncConflictError, sync_conflict_handler)
     app.add_exception_handler(AIProviderNotConfiguredError, ai_provider_not_configured_handler)
     app.add_exception_handler(AIProviderResponseError, ai_provider_not_configured_handler)
     app.add_exception_handler(AIOutputValidationError, ai_output_validation_handler)
     app.add_exception_handler(KnowledgeNotAvailableError, knowledge_not_available_handler)
+    app.add_exception_handler(StorageNotConfiguredError, storage_unavailable_handler)
+    app.add_exception_handler(StorageUnavailableError, storage_unavailable_handler)
+    app.add_exception_handler(StorageValidationError, storage_validation_handler)
+    app.add_exception_handler(VisionOutputInvalidError, vision_output_invalid_handler)
