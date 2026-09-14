@@ -3,6 +3,7 @@ import { useSession } from '../session/useSession'
 import { ROLE_LABELS, WORKSPACE_FALLBACK_NAME } from '../session/roles'
 import { groupNavItems, NAV_ITEMS } from './nav'
 import { NavIcon } from './NavIcon'
+import { BrandAvatar, WorkspaceSwitcher } from './WorkspaceSwitcher'
 
 const GROUP_LABELS = {
   WORKSPACE: 'Workspace',
@@ -14,9 +15,10 @@ const GROUP_LABELS = {
 
 /**
  * Sidebar persistente y elevada, con navegación azul acolchada por rol.
- * La identidad, las membresías y el rol provienen de `/api/v1/me`. El
- * conmutador de workspace cambia entre las marcas de la misma identidad y
- * el enlace "Nuevo workspace" lleva al alta self-serve (`POST /brands`).
+ * La identidad, las membresías y el rol provienen de `/api/v1/me`. Con una
+ * sola marca el chip es estático; con dos o más se vuelve el conmutador clay
+ * (`WorkspaceSwitcher`). "Nuevo workspace" lleva al alta self-serve
+ * (`POST /brands`).
  */
 export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   const { profile, switchBrand, signOut } = useSession()
@@ -38,43 +40,23 @@ export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
         <span className="text-[15px] font-bold tracking-tight text-ink">Content Suite</span>
       </div>
 
-      <div className="clay clay-chip mb-1.5 flex items-center gap-3 px-3 py-2.5">
-        <span
-          aria-hidden="true"
-          className="clay-icon size-8 shrink-0 bg-strawberry text-[12px] font-bold text-white shadow-[5px_6px_12px_rgba(230,57,70,.35),-3px_-3px_8px_rgba(255,255,255,.9),inset_0_1.5px_0_rgba(255,255,255,.4),inset_-2px_-3px_6px_rgba(29,53,87,.28)]"
-        >
-          {workspaceName.charAt(0)}
-        </span>
-        {memberships.length > 1 ? (
-          <span className="min-w-0 flex-1">
-            <label htmlFor="workspace-switcher" className="sr-only">
-              Cambiar de workspace
-            </label>
-            <select
-              id="workspace-switcher"
-              value={profile?.activeMembership?.brand_id ?? ''}
-              onChange={(event) => switchBrand(event.target.value)}
-              className="w-full cursor-pointer truncate bg-transparent text-[13px] font-semibold leading-tight text-ink outline-none"
-            >
-              {memberships.map((membership) => (
-                <option key={membership.brand_id} value={membership.brand_id}>
-                  {membership.brand_name}
-                </option>
-              ))}
-            </select>
-            <span className="block text-[11px] text-ink-soft">
-              Workspace · {memberships.length} marcas
-            </span>
-          </span>
-        ) : (
+      {profile?.activeMembership && memberships.length > 1 ? (
+        <WorkspaceSwitcher
+          memberships={memberships}
+          active={profile.activeMembership}
+          onSwitch={switchBrand}
+        />
+      ) : (
+        <div className="clay clay-chip mb-1.5 flex items-center gap-3 px-3 py-2.5">
+          <BrandAvatar name={workspaceName} />
           <span className="min-w-0 flex-1">
             <span className="block truncate text-[13px] font-semibold leading-tight text-ink">
               {workspaceName}
             </span>
             <span className="block text-[11px] text-ink-soft">Workspace</span>
           </span>
-        )}
-      </div>
+        </div>
+      )}
       <Link
         to="/workspaces/new"
         onClick={onNavigate}

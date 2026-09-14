@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { cleanup, render, screen } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router'
 import { SessionContext, type SessionContextValue } from '../session/session-context'
 import type { Membership } from '../../shared/api/types'
@@ -52,6 +52,15 @@ function renderSidebar(
   )
 }
 
+// Radix Popper mide el disparador con ResizeObserver; jsdom no lo trae.
+class ResizeObserverStub {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+}
+globalThis.ResizeObserver = ResizeObserverStub as unknown as typeof ResizeObserver
+Element.prototype.scrollIntoView = () => {}
+
 afterEach(cleanup)
 
 describe('navegación Creative Studio', () => {
@@ -78,42 +87,50 @@ describe('navegación Creative Studio', () => {
 })
 
 describe('conmutador de workspace', () => {
-  it('muestra el nombre como texto plano cuando la identidad pertenece a una sola marca', () => {
+  const second: Membership = {
+    brand_id: 'brand-2',
+    brand_name: 'Segunda Marca',
+    brand_slug: 'segunda-marca',
+    role: 'CONTENT_REVIEWER',
+  }
+
+  it('muestra un chip estático (sin desplegable) cuando la identidad pertenece a una sola marca', () => {
     renderSidebar('CREATOR')
-    expect(screen.queryByLabelText('Cambiar de workspace')).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Cambiar de workspace' })).toBeNull()
     expect(screen.getByText('Kinu')).toBeDefined()
   })
 
-  it('ofrece un selector con todas las marcas cuando hay más de una membresía', () => {
-    const second: Membership = {
-      brand_id: 'brand-2',
-      brand_name: 'Segunda Marca',
-      brand_slug: 'segunda-marca',
-      role: 'CREATOR',
-    }
+  it('con dos o más membresías, el chip despliega todas las marcas con su rol y la activa marcada', () => {
     renderSidebar('CREATOR', [second])
 
-    const select = screen.getByLabelText('Cambiar de workspace') as HTMLSelectElement
-    expect(select.value).toBe('brand-1')
-    expect(screen.getByRole('option', { name: 'Kinu' })).toBeDefined()
-    expect(screen.getByRole('option', { name: 'Segunda Marca' })).toBeDefined()
+    const trigger = screen.getByRole('button', { name: 'Cambiar de workspace' })
+    expect(trigger.textContent).toContain('Kinu')
+    expect(trigger.textContent).toContain('2 marcas')
+
+    fireEvent.keyDown(trigger, { key: 'Enter' })
+
+    const options = screen.getAllByRole('menuitemradio')
+    expect(options.map((option) => option.textContent)).toEqual([
+      expect.stringContaining('Kinu'),
+      expect.stringContaining('Segunda Marca'),
+    ])
+    expect(options[0].getAttribute('aria-checked')).toBe('true')
+    expect(options[1].getAttribute('aria-checked')).toBe('false')
+    expect(options[1].textContent).toContain('Content Reviewer')
   })
 
-  it('llama a switchBrand con el brand_id elegido', () => {
-    const second: Membership = {
-      brand_id: 'brand-2',
-      brand_name: 'Segunda Marca',
-      brand_slug: 'segunda-marca',
-      role: 'CREATOR',
-    }
+  it('llama a switchBrand con el brand_id elegido y no al reelegir la activa', () => {
     const switchBrand = vi.fn()
     renderSidebar('CREATOR', [second], switchBrand)
+    const trigger = screen.getByRole('button', { name: 'Cambiar de workspace' })
 
-    const select = screen.getByLabelText('Cambiar de workspace') as HTMLSelectElement
-    select.value = 'brand-2'
-    select.dispatchEvent(new Event('change', { bubbles: true }))
-
+    fireEvent.keyDown(trigger, { key: 'Enter' })
+    fireEvent.click(screen.getByRole('menuitemradio', { name: /Segunda Marca/ }))
     expect(switchBrand).toHaveBeenCalledWith('brand-2')
+
+    fireEvent.keyDown(trigger, { key: 'Enter' })
+    fireEvent.click(screen.getByRole('menuitemradio', { name: /Kinu/ }))
+    expect(switchBrand).toHaveBeenCalledTimes(1)
   })
 })
 
