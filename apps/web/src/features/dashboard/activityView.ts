@@ -10,6 +10,9 @@ const EVENT_TYPE_LABELS: Record<string, string> = {
   SUBMITTED: 'Contenido enviado a revisión',
   CONTENT_APPROVED: 'Contenido aprobado',
   CONTENT_CHANGES_REQUESTED: 'Cambios de contenido solicitados',
+  VISUAL_UPLOADED: 'Visual subido',
+  VISUAL_CHANGES_REQUESTED: 'Cambios visuales solicitados',
+  FINAL_APPROVED: 'Aprobado final',
   PUBLISHED: 'Brand DNA publicado',
 }
 
