@@ -41,6 +41,7 @@ from app.creative.schemas import (
     ItemList,
     ItemOut,
     ItemSummary,
+    PipelineOut,
     SubmitIn,
     VersionCreateIn,
     VersionList,
@@ -202,6 +203,15 @@ def list_items(
         latest = repository.latest_version(session, item.id)
         summaries.append(_to_item_summary(item, latest.version if latest else 0))
     return ItemList(items=summaries)
+
+
+def pipeline(session: Session, user: AuthenticatedUser, brand_id: uuid.UUID) -> PipelineOut:
+    """Content Pipeline breakdown (change 014): membership-first, then the real
+    7-state count — no client input decides which brand is authorized."""
+    membership = repository.get_membership(session, user.id, brand_id)
+    policies.require_reader(membership)
+    counts = repository.count_by_workflow_status(session, brand_id)
+    return PipelineOut(brand_id=brand_id, counts=counts, total=sum(counts.values()))
 
 
 def get_item(session: Session, user: AuthenticatedUser, item_id: uuid.UUID) -> ItemOut:

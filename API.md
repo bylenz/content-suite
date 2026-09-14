@@ -50,6 +50,7 @@ DELETE /api/v1/brands/{brand_id}/assets/{asset_id}
 ```http
 POST /api/v1/creative-items
 GET  /api/v1/creative-items
+GET  /api/v1/creative-items/pipeline
 GET  /api/v1/creative-items/{item_id}
 
 POST /api/v1/creative-items/{item_id}/generate
@@ -98,6 +99,27 @@ GET /api/v1/traces/{trace_id}
 ```
 
 Esta facade nunca reemplaza Langfuse.
+
+## Dashboard Activity
+
+```http
+GET /api/v1/creative-items/pipeline?brand_id
+GET /api/v1/activity?brand_id&limit&offset
+```
+
+Ambos endpoints son de solo lectura, sin migración: leen `creative_items`,
+`workflow_events` y `brand_dna_versions` ya existentes. `brand_id` es siempre
+explícito (a diferencia de la facade de observabilidad, no hay modo
+"agregado sin marca"). 403 si el actor no tiene membresía en `brand_id`.
+
+`pipeline` devuelve el conteo de creative items por cada uno de los 7 valores
+reales de `workflow_status`, con cero explícito en los estados sin items.
+
+`activity` devuelve un feed paginado (`limit` 1-50 default 20, `offset`,
+`total`) que fusiona `workflow_events` de la marca con un evento derivado por
+cada versión de Brand DNA publicada (`published_at`/`created_by`), en orden
+cronológico descendente. No incluye auditoría de IA ni sincronización de
+Knowledge (change 014: sin fuente de evento persistida hoy).
 
 ## Response Error Shape
 

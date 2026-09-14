@@ -3,12 +3,12 @@
 import uuid
 from collections.abc import Sequence
 
-from sqlalchemy import select, update
+from sqlalchemy import func, select, update
 from sqlalchemy.orm import Session
 
 from app.brand_dna import repository as brand_dna_repository
 from app.brand_dna.models import BrandDnaVersion
-from app.creative.models import CreativeItem, CreativeVersion, WorkflowEvent
+from app.creative.models import CreativeItem, CreativeVersion, CreativeWorkflowStatus, WorkflowEvent
 from app.identity import repository as identity_repository
 from app.identity.models import BrandMembership
 
@@ -46,6 +46,22 @@ def list_items(session: Session, brand_ids: Sequence[uuid.UUID]) -> list[Creativ
         .order_by(CreativeItem.updated_at.desc(), CreativeItem.created_at.desc())
     )
     return list(session.scalars(stmt))
+
+
+def count_by_workflow_status(
+    session: Session, brand_id: uuid.UUID
+) -> dict[CreativeWorkflowStatus, int]:
+    """Item counts per real `workflow_status` value, zero-filled for absent states
+    (change 014: pipeline breakdown must expose all 7 states, never omit one)."""
+    counts: dict[CreativeWorkflowStatus, int] = {status: 0 for status in CreativeWorkflowStatus}
+    stmt = (
+        select(CreativeItem.workflow_status, func.count())
+        .where(CreativeItem.brand_id == brand_id)
+        .group_by(CreativeItem.workflow_status)
+    )
+    for workflow_status, count in session.execute(stmt):
+        counts[workflow_status] = count
+    return counts
 
 
 def get_active_brand_dna_version(session: Session, brand_id: uuid.UUID) -> BrandDnaVersion | None:

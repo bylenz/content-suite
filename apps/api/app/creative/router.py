@@ -20,6 +20,7 @@ from app.creative.schemas import (
     ItemCreateIn,
     ItemList,
     ItemOut,
+    PipelineOut,
     SubmitIn,
     VersionCreateIn,
     VersionList,
@@ -69,6 +70,17 @@ def list_creative_items(
     session: Session = Depends(get_session),
 ) -> ItemList:
     return service.list_items(session, user, brand_id)
+
+
+@router.get("/pipeline", response_model=PipelineOut)
+def read_creative_pipeline(
+    brand_id: uuid.UUID = Query(...),
+    user: AuthenticatedUser = Depends(get_current_user),
+    session: Session = Depends(get_session),
+) -> PipelineOut:
+    # Registered before `/{item_id}` on purpose: a literal segment must be
+    # matched first, or "pipeline" would be parsed as a (failing) item UUID.
+    return service.pipeline(session, user, brand_id)
 
 
 @router.get("/{item_id}", response_model=ItemOut)
