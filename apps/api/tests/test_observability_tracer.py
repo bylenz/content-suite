@@ -61,7 +61,7 @@ def test_complete_config_resolves_the_langfuse_adapter(monkeypatch) -> None:
     sentinel = object()
     monkeypatch.setattr(
         "app.observability.langfuse_adapter._build_client",
-        lambda public_key, secret_key, host: sentinel,
+        lambda public_key, secret_key, host, environment: sentinel,
     )
     settings = Settings(
         _env_file=None,
@@ -74,8 +74,27 @@ def test_complete_config_resolves_the_langfuse_adapter(monkeypatch) -> None:
     assert tracer._client is sentinel
 
 
+def test_environment_setting_is_forwarded_to_the_client(monkeypatch) -> None:
+    built: list[str] = []
+
+    def recording_client(public_key: str, secret_key: str, host: str, environment: str) -> object:
+        built.append(environment)
+        return object()
+
+    monkeypatch.setattr("app.observability.langfuse_adapter._build_client", recording_client)
+    settings = Settings(
+        _env_file=None,
+        langfuse_public_key="pk-lf-env",
+        langfuse_secret_key="sk-lf-env",
+        langfuse_host="https://langfuse-env.example",
+        langfuse_environment="production",
+    )
+    assert isinstance(resolve_tracer(settings), LangfuseTracer)
+    assert built == ["production"]
+
+
 def test_failed_initialization_degrades_to_noop_with_sanitized_log(monkeypatch, caplog) -> None:
-    def broken_client(public_key: str, secret_key: str, host: str) -> object:
+    def broken_client(public_key: str, secret_key: str, host: str, environment: str) -> object:
         raise RuntimeError("sdk exploded with secret sk-lf-test")
 
     monkeypatch.setattr("app.observability.langfuse_adapter._build_client", broken_client)
@@ -127,7 +146,7 @@ def test_repeated_partial_config_resolution_logs_the_warning_once(caplog) -> Non
 def test_repeated_complete_config_resolution_builds_the_client_once(monkeypatch) -> None:
     built: list[tuple[str, str, str]] = []
 
-    def counting_client(public_key: str, secret_key: str, host: str) -> object:
+    def counting_client(public_key: str, secret_key: str, host: str, environment: str) -> object:
         built.append((public_key, secret_key, host))
         return object()
 
@@ -148,7 +167,7 @@ def test_repeated_complete_config_resolution_builds_the_client_once(monkeypatch)
 
 
 def test_repeated_failed_initialization_degrades_with_single_log(monkeypatch, caplog) -> None:
-    def broken_client(public_key: str, secret_key: str, host: str) -> object:
+    def broken_client(public_key: str, secret_key: str, host: str, environment: str) -> object:
         raise RuntimeError("sdk exploded")
 
     monkeypatch.setattr(

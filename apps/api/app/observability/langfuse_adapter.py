@@ -66,8 +66,17 @@ class LangfuseTracer:
             return None
 
 
-def _build_client(langfuse_public_key: str, langfuse_secret_key: str, langfuse_host: str) -> Any:
-    """Construct the Langfuse client with a lazy SDK import (complete config only)."""
+def _build_client(
+    langfuse_public_key: str,
+    langfuse_secret_key: str,
+    langfuse_host: str,
+    langfuse_environment: str = "",
+) -> Any:
+    """Construct the Langfuse client with a lazy SDK import (complete config only).
+
+    An empty environment leaves the SDK default ("default"), so traces from
+    local and production runs are only separable once it is set.
+    """
     try:
         from langfuse import Langfuse  # lazy by design: this module is the SDK boundary
     except ImportError as exc:
@@ -76,6 +85,7 @@ def _build_client(langfuse_public_key: str, langfuse_secret_key: str, langfuse_h
         public_key=langfuse_public_key,
         secret_key=langfuse_secret_key,
         host=langfuse_host,
+        environment=langfuse_environment or None,
     )
 
 
@@ -88,13 +98,19 @@ def resolve_tracer(settings: Settings) -> Tracer:
     client at most once per process, however many callers resolve.
     """
     return _resolve_cached(
-        settings.langfuse_public_key, settings.langfuse_secret_key, settings.langfuse_host
+        settings.langfuse_public_key,
+        settings.langfuse_secret_key,
+        settings.langfuse_host,
+        settings.langfuse_environment,
     )
 
 
 @cache
 def _resolve_cached(
-    langfuse_public_key: str, langfuse_secret_key: str, langfuse_host: str
+    langfuse_public_key: str,
+    langfuse_secret_key: str,
+    langfuse_host: str,
+    langfuse_environment: str = "",
 ) -> Tracer:
     missing = [
         f"CONTENT_SUITE_{field.upper()}"
@@ -108,7 +124,12 @@ def _resolve_cached(
     if not missing:
         try:
             return LangfuseTracer(
-                _build_client(langfuse_public_key, langfuse_secret_key, langfuse_host)
+                _build_client(
+                    langfuse_public_key,
+                    langfuse_secret_key,
+                    langfuse_host,
+                    langfuse_environment,
+                )
             )
         except Exception as exc:
             logger.warning(

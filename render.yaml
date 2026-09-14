@@ -29,6 +29,8 @@ services:
         value: glm
       - key: CONTENT_SUITE_LANGFUSE_HOST
         value: https://us.cloud.langfuse.com
+      - key: CONTENT_SUITE_LANGFUSE_ENVIRONMENT
+        value: production
       - key: CONTENT_SUITE_STORAGE_BUCKET
         value: content-suite
       # Set in the Dashboard (values from apps/api/.env, without quotes)

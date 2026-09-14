@@ -49,6 +49,10 @@ class Settings(BaseSettings):
     langfuse_public_key: str = ""
     langfuse_secret_key: str = ""
     langfuse_host: str = ""
+    # Optional trace environment tag (e.g. "development", "production"): keeps
+    # local and deployed traces separable in one Langfuse project. Langfuse
+    # requires lowercase letters, digits, "-" or "_", not starting with "langfuse".
+    langfuse_environment: str = ""
     # OpenAI embeddings (production provider). Empty/0 defaults keep the app
     # starting unconfigured; the resolver treats them as "not configured".
     openai_api_key: str = ""
