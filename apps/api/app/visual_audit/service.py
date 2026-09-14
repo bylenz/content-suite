@@ -299,10 +299,14 @@ async def list_assets(
     settings: Settings,
 ) -> VisualAssetList:
     item = _resolve_reader_item(session, user, item_id)
-    if storage is None:
+    assets = repository.list_assets(session, item.id)
+    if assets and storage is None:
+        # Only a real asset needs a signed URL; an empty list is always
+        # servable, storage-configured or not (no signing work to do).
         raise StorageNotConfiguredError("visual.list_assets")
     out = []
-    for asset in repository.list_assets(session, item.id):
+    for asset in assets:
+        assert storage is not None  # guarded above whenever assets is non-empty
         signed = await storage.signed_url(
             path=asset.storage_path, ttl_seconds=settings.storage_signed_url_ttl_seconds
         )
@@ -469,10 +473,14 @@ async def history(
     settings: Settings,
 ) -> VisualAuditHistoryOut:
     item = _resolve_reader_item(session, user, item_id)
-    if storage is None:
+    assets = repository.list_assets(session, item.id)
+    if assets and storage is None:
+        # Only a real asset needs a signed URL; an item with no visuals yet
+        # has an empty (and always servable) history.
         raise StorageNotConfiguredError("visual.history")
     entries: list[VisualHistoryEntryOut] = []
-    for asset in repository.list_assets(session, item.id):
+    for asset in assets:
+        assert storage is not None  # guarded above whenever assets is non-empty
         signed = await storage.signed_url(
             path=asset.storage_path, ttl_seconds=settings.storage_signed_url_ttl_seconds
         )

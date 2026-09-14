@@ -163,6 +163,55 @@ def test_history_membership_first_404(client: TestClient, session: Session):
         clear_visual_adapter_overrides()
 
 
+def test_list_assets_with_no_assets_never_requires_storage(client: TestClient, session: Session):
+    """Regression (found via manual verification, task 8.3): an item with no
+    visuals yet must be servable even when storage is entirely unconfigured
+    -- there is no signed URL to compute for an empty list."""
+    workspace = make_workspace(session)
+    item = make_approved_item(client, session, workspace)
+    install_visual_adapters(storage=None)
+    try:
+        response = list_assets(client, workspace["tokens"][BrandRole.CREATOR], item["id"])
+        assert response.status_code == 200
+        assert response.json()["assets"] == []
+    finally:
+        clear_visual_adapter_overrides()
+
+
+def test_history_with_no_assets_never_requires_storage(client: TestClient, session: Session):
+    workspace = make_workspace(session)
+    item = make_approved_item(client, session, workspace)
+    install_visual_adapters(storage=None)
+    try:
+        response = history(client, workspace["tokens"][BrandRole.CREATOR], item["id"])
+        assert response.status_code == 200
+        assert response.json()["entries"] == []
+    finally:
+        clear_visual_adapter_overrides()
+
+
+def test_list_assets_with_an_asset_still_needs_storage(client: TestClient, session: Session):
+    """The flip side of the regression above: once a real asset exists, its
+    signed URL still requires storage -- the fix narrows the guard, it does
+    not remove it."""
+    workspace = make_workspace(session)
+    item = make_approved_item(client, session, workspace)
+    install_visual_adapters()
+    try:
+        creator_token = workspace["tokens"][BrandRole.CREATOR]
+        assert upload_visual(client, creator_token, item["id"]).status_code == 201
+    finally:
+        clear_visual_adapter_overrides()
+
+    install_visual_adapters(storage=None)
+    try:
+        response = list_assets(client, workspace["tokens"][BrandRole.CREATOR], item["id"])
+        assert response.status_code == 503
+        assert response.json()["error"]["code"] == "STORAGE_UNAVAILABLE"
+    finally:
+        clear_visual_adapter_overrides()
+
+
 def test_all_visual_endpoints_error_envelope_shape_on_403(client: TestClient, session: Session):
     workspace = make_workspace(session)
     item = make_approved_item(client, session, workspace)
