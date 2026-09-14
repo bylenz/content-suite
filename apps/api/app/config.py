@@ -31,6 +31,13 @@ class Settings(BaseSettings):
     openai_embedding_model: str = ""
     openai_embedding_dimensions: int = 0
     openai_text_model: str = ""
+    # Vision provider (change 008 follow-up): independent of `ai_provider`
+    # since text/embeddings stay on OpenAI while Vision has no OpenAI adapter
+    # in this codebase -- only GLM (Zhipu/Z.ai) is implemented so far.
+    vision_provider: str = ""
+    glm_api_key: str = ""
+    glm_base_url: str = ""
+    glm_vision_model: str = ""
     # Private storage (change 008): empty defaults keep storage unconfigured; the
     # resolver treats partial configuration the same as absent (503, no fallback).
     storage_project_url: str = ""

@@ -17,6 +17,8 @@ logger = logging.getLogger(__name__)
 
 DEFAULT_EMBEDDING_MODEL = "text-embedding-3-small"
 DEFAULT_TEXT_MODEL = "gpt-4o-mini"
+DEFAULT_GLM_BASE_URL = "https://api.z.ai/api/coding/paas/v4"
+DEFAULT_GLM_VISION_MODEL = "glm-5.3-flash"
 
 
 def resolve_embedding_model(settings: Settings) -> EmbeddingModel | None:
@@ -114,14 +116,41 @@ def _resolve_text_cached(
 def resolve_vision_model(settings: Settings) -> VisionModel | None:
     """Resolve the Vision adapter from settings (compositional root).
 
-    No production Vision provider is implemented yet (out of scope for
-    change 008-visual-compliance: it consumes the `VisionModel` port defined
-    by AI Platform, it does not add a new provider adapter for it). This
-    always resolves to `None` -- the same "unconfigured provider" shape used
-    everywhere else -- so `run_capability` fails fast with
-    `AIProviderNotConfiguredError` (503) until a real adapter lands. Tests
-    and local dev inject `app.ai.fakes.FakeVisionModel` via dependency
-    override instead of going through this resolver.
+    Independent of `ai_provider`/`resolve_text_model`: text and embeddings
+    stay on OpenAI, Vision has no OpenAI adapter in this codebase, only GLM
+    (Zhipu/Z.ai, `CONTENT_SUITE_VISION_PROVIDER=glm`). Same states as the
+    other resolvers: absent config -> None (info), partial config -> None
+    (warning naming the missing setting NAMES), complete -> adapter. Tests
+    inject `app.ai.fakes.FakeVisionModel` via dependency override instead of
+    going through this resolver.
     """
-    del settings  # no configuration reads a real adapter into existence yet
-    return None
+    return _resolve_vision_cached(
+        settings.vision_provider,
+        settings.glm_api_key,
+        settings.glm_base_url,
+        settings.glm_vision_model,
+    )
+
+
+@cache
+def _resolve_vision_cached(
+    vision_provider: str, glm_api_key: str, glm_base_url: str, glm_vision_model: str
+) -> VisionModel | None:
+    if not vision_provider and not glm_api_key:
+        logger.info("Vision provider disabled: no configuration present")
+        return None
+    missing: list[str] = []
+    if vision_provider != "glm":
+        missing.append("CONTENT_SUITE_VISION_PROVIDER=glm")
+    if not glm_api_key:
+        missing.append("CONTENT_SUITE_GLM_API_KEY")
+    if missing:
+        logger.warning("Vision provider disabled: missing settings %s", ", ".join(missing))
+        return None
+    from app.ai.providers.glm_vision import GLMVisionModel
+
+    return GLMVisionModel(
+        api_key=glm_api_key,
+        base_url=glm_base_url or DEFAULT_GLM_BASE_URL,
+        model=glm_vision_model or DEFAULT_GLM_VISION_MODEL,
+    )

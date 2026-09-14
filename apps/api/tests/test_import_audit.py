@@ -115,12 +115,14 @@ def test_unrelated_and_relative_imports_are_not_flagged() -> None:
 
 
 def test_ai_providers_package_files_are_expected() -> None:
-    # 006 added the OpenAI embeddings adapter; spec 04 added the text adapter.
-    # The directory remains the only SDK boundary (enforced by the tests above).
+    # 006 added the OpenAI embeddings adapter; spec 04 added the text adapter;
+    # the 008 follow-up added the GLM vision adapter. The directory remains
+    # the only SDK boundary (enforced by the tests above).
     providers_dir = APP_ROOT / "ai" / "providers"
     found = (p.relative_to(APP_ROOT.parent).as_posix() for p in providers_dir.rglob("*.py"))
     assert sorted(found) == [
         "app/ai/providers/__init__.py",
+        "app/ai/providers/glm_vision.py",
         "app/ai/providers/openai_embeddings.py",
         "app/ai/providers/openai_text.py",
     ]
