@@ -45,8 +45,11 @@ class TraceIndexEntry(Base):
     prompt_version: Mapped[str | None] = mapped_column(String())
     model: Mapped[str | None] = mapped_column(String())
     latency_ms: Mapped[float | None] = mapped_column(Float())
-    outcome: Mapped[TraceOutcome] = mapped_column(Enum(TraceOutcome, name="trace_outcome"))
-    error_type: Mapped[str | None] = mapped_column(String())
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now()
+    outcome: Mapped[TraceOutcome] = mapped_column(
+        # Persist the enum *values* ("ok"/"error"): the PostgreSQL type created by
+        # migration a3d8f2c6e9b1 only accepts those, while SQLAlchemy's default
+        # would send the member names ("OK"/"ERROR") and fail with DataError.
+        Enum(TraceOutcome, name="trace_outcome", values_callable=lambda e: [m.value for m in e])
     )
+    error_type: Mapped[str | None] = mapped_column(String())
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
