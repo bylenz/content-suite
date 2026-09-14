@@ -33,9 +33,9 @@
 
 ## 7. Frontend
 
-- [ ] 7.1 Crear `apps/web/src/features/brand-audit`: cola del Visual Reviewer, detalle de asset con imagen via signed URL (nunca path), lista de findings/evidencia con severidades, historial de auditorías y decisiones, y panel de decisión (approve con checkbox de excepción HIGH y confirmación, request-changes con feedback); estados de carga/error/vacío reales mapeando 403/409/422/503. Verificar con `npm run typecheck` y `npm run build` en `apps/web`.
-- [ ] 7.2 Extender Creative Studio (feature de la spec 04, aditivo): upload de visual para items `CONTENT_APPROVED`/`VISUAL_CHANGES_REQUESTED`, listado de versiones con estado y feedback del reviewer; habilitar la entrada "Brand Audit" del nav solo para `VISUAL_REVIEWER` según `nav.ts` y `docs/UI_UX.md`; preservar Dashboard/Brand DNA aprobados. Verificar con `npm run typecheck`, `npm run build` y revisión manual de nav por rol con dev tokens.
-- [ ] 7.3 Validar la UI contra `starter-design/Content Suite.dc.html` y `docs/UI_UX.md`: clay fuerte en cola/decisión, superficies editoriales tenues para findings, paleta canónica y contraste AA; no introducir pantallas fuera del alcance de esta change. Verificar con revisión visual manual y `npm run lint` limpio.
+- [x] 7.1 Crear `apps/web/src/features/brand-audit`: cola del Visual Reviewer, detalle de asset con imagen via signed URL (nunca path), lista de findings/evidencia con severidades, historial de auditorías y decisiones, y panel de decisión (approve con checkbox de excepción HIGH y confirmación, request-changes con feedback); estados de carga/error/vacío reales mapeando 403/409/422/503. Verificar con `npm run typecheck` y `npm run build` en `apps/web`.
+- [x] 7.2 Extender Creative Studio (feature de la spec 04, aditivo): upload de visual para items `CONTENT_APPROVED`/`VISUAL_CHANGES_REQUESTED`, listado de versiones con estado y feedback del reviewer; habilitar la entrada "Brand Audit" del nav solo para `VISUAL_REVIEWER` según `nav.ts` y `docs/UI_UX.md`; preservar Dashboard/Brand DNA aprobados. Verificar con `npm run typecheck`, `npm run build` y revisión manual de nav por rol con dev tokens.
+- [x] 7.3 Validar la UI contra `starter-design/Content Suite.dc.html` y `docs/UI_UX.md`: clay fuerte en cola/decisión, superficies editoriales tenues para findings, paleta canónica y contraste AA; no introducir pantallas fuera del alcance de esta change. Verificar con revisión visual manual y `npm run lint` limpio.
 
 ## 8. Calidad y validación final
 

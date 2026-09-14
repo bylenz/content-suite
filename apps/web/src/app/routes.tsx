@@ -13,6 +13,8 @@ import { CreativeCreatePage } from '../features/creative/CreativeCreatePage'
 import { CreativeItemPage } from '../features/creative/CreativeItemPage'
 import { ApprovalsQueuePage } from '../features/approvals/ApprovalsQueuePage'
 import { ApprovalDetailPage } from '../features/approvals/ApprovalDetailPage'
+import { BrandAuditQueuePage } from '../features/brand-audit/BrandAuditQueuePage'
+import { BrandAuditDetailPage } from '../features/brand-audit/BrandAuditDetailPage'
 
 export function AppRoutes() {
   return (
@@ -32,6 +34,8 @@ export function AppRoutes() {
           <Route path="/creative/items/:itemId" element={<CreativeItemPage />} />
           <Route path="/approvals" element={<ApprovalsQueuePage />} />
           <Route path="/approvals/:itemId" element={<ApprovalDetailPage />} />
+          <Route path="/brand-audit" element={<BrandAuditQueuePage />} />
+          <Route path="/brand-audit/:itemId" element={<BrandAuditDetailPage />} />
         </Route>
       </Route>
       <Route path="/404" element={<NotFoundPage />} />

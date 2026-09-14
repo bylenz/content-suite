@@ -48,6 +48,28 @@ export function isEditable(status: CreativeWorkflowStatus): boolean {
   return EDITABLE_STATUSES.includes(status)
 }
 
+/** Estados donde el ítem ya alcanzó la etapa visual (change 008). */
+const VISUAL_STAGE_STATUSES: readonly CreativeWorkflowStatus[] = [
+  'CONTENT_APPROVED',
+  'PENDING_VISUAL_REVIEW',
+  'VISUAL_CHANGES_REQUESTED',
+  'FINAL_APPROVED',
+]
+
+/** Estados donde el Creator puede subir una nueva versión de visual. */
+const UPLOADABLE_VISUAL_STATUSES: readonly CreativeWorkflowStatus[] = [
+  'CONTENT_APPROVED',
+  'VISUAL_CHANGES_REQUESTED',
+]
+
+export function isVisualStage(status: CreativeWorkflowStatus): boolean {
+  return VISUAL_STAGE_STATUSES.includes(status)
+}
+
+export function isUploadableVisualStatus(status: CreativeWorkflowStatus): boolean {
+  return UPLOADABLE_VISUAL_STATUSES.includes(status)
+}
+
 /**
  * Mensaje presentable para los envelopes de error de las mutaciones creative.
  * 503 KNOWLEDGE_NOT_AVAILABLE es el fail-safe de la spec: estado claro, sin

@@ -24,6 +24,7 @@ import {
 } from './api'
 import { VersionOutputView } from './VersionOutputView'
 import { VersionEditForm } from './VersionEditForm'
+import { VisualComplianceSection } from './VisualComplianceSection'
 import {
   describeMutationError,
   isEditable,
@@ -323,6 +324,15 @@ export function CreativeItemPage() {
           {current?.consistency_result && (
             <ConsistencyCard result={current.consistency_result} score={current.consistency_score} />
           )}
+
+          {/* Extensión aditiva (change 008): visual final una vez el contenido
+              está aprobado -- upload del Creator, versiones y feedback del
+              Visual Reviewer; la decisión y la auditoría viven en Brand Audit. */}
+          <VisualComplianceSection
+            itemId={data.id}
+            workflowStatus={data.workflow_status}
+            isCreator={isCreator}
+          />
 
           {/* Vista read-only de una versión previa elegida en el historial. */}
           <AnimatePresence>
