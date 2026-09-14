@@ -660,6 +660,13 @@ def _submit_locked(
             "Version was already submitted; create a new version to resubmit",
             {"item_id": item.id, "requested_version_id": version.id},
         )
+    if version.output is None:
+        # A brief-only version (the initial v1) has nothing for reviewers to
+        # judge: content must be generated or written before submission.
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Version has no content to submit; generate or edit content first",
+        )
     # WORKFLOWS.md content submission: knowledge availability is verified before
     # any mutation; the 503 KNOWLEDGE_NOT_AVAILABLE envelope answers otherwise.
     _require_synced_knowledge(session, item.brand_id)

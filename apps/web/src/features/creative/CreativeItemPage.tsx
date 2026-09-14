@@ -211,6 +211,11 @@ export function CreativeItemPage() {
                 Enviar a revisión
               </Button>
             )}
+            {current.output === null && (
+              <p className="basis-full text-[11.5px] text-ink-soft">
+                Genera con IA o edita el contenido antes de enviarlo a revisión.
+              </p>
+            )}
           </div>
         )}
       </motion.header>

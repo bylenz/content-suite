@@ -192,3 +192,22 @@ def test_submit_from_terminal_states_is_409(client: TestClient, session: Session
 
     assert response.status_code == 409
     assert response.json()["error"]["code"] == "INVALID_WORKFLOW_TRANSITION"
+
+
+def test_submit_brief_only_version_is_422(client: TestClient, session: Session):
+    """The initial v1 stores only the brief (output=None): reviewers need content."""
+    workspace = make_workspace(session, roles=(BrandRole.CREATOR,))
+    token = workspace["tokens"][BrandRole.CREATOR]
+    seed_synced_knowledge(
+        session, workspace["brand_id"], workspace["profiles"][BrandRole.CREATOR].id
+    )
+    item = create_item(client, token, workspace["brand_id"]).json()
+
+    response = submit(client, token, item["id"], item["current_version"]["id"])
+
+    assert response.status_code == 422
+    assert "no content" in response.json()["error"]["message"]
+    assert session.get(CreativeItem, uuid.UUID(item["id"])).workflow_status == (
+        CreativeWorkflowStatus.DRAFT
+    )
+    assert events_for(session, item["id"]) == []
