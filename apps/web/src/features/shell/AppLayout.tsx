@@ -2,6 +2,8 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { Outlet } from 'react-router'
 import { motion } from 'motion/react'
 import { drawerContent } from '../../shared/motion'
+import { CreateBrandPage } from '../session/CreateBrandPage'
+import { useActiveBrand } from '../session/useActiveBrand'
 import { SidebarContent } from './SidebarContent'
 
 /** Duración de la salida animada del drawer (ms); después cierra el dialog. */
@@ -16,6 +18,7 @@ const DRAWER_EXIT_MS = 180
  * inmediato y MotionConfig elimina el desplazamiento.
  */
 export function AppLayout() {
+  const brand = useActiveBrand()
   const [drawerPhase, setDrawerPhase] = useState<'open' | 'closing' | 'closed'>('closed')
   const dialogRef = useRef<HTMLDialogElement>(null)
   const menuButtonRef = useRef<HTMLButtonElement>(null)
@@ -63,6 +66,12 @@ export function AppLayout() {
     },
     [],
   )
+
+  // Identidad autenticada sin ninguna membresía: no hay marca que mostrar en
+  // el shell -- se ofrece el onboarding self-serve en vez de un sidebar vacío.
+  if (!brand) {
+    return <CreateBrandPage />
+  }
 
   return (
     <div className="flex min-h-screen w-full bg-canvas text-ink">

@@ -184,6 +184,16 @@ export function SessionProvider({
     [supabaseClient],
   )
 
+  const refreshProfile = useCallback(async () => {
+    try {
+      const me = await apiFetch<Me>('/api/v1/me')
+      setProfile(toProfile(me))
+    } catch {
+      // Token ya validado recientemente; un fallo aquí es inesperado pero no
+      // amerita forzar logout -- el caller puede reintentar si lo necesita.
+    }
+  }, [])
+
   const signOut = useCallback(async () => {
     queryClient.removeQueries({ queryKey: ['brand-dna'] })
     try {
@@ -215,6 +225,7 @@ export function SessionProvider({
       nextDevRole: next,
       signInWithMagicLink,
       signOut,
+      refreshProfile,
     }
   }, [
     status,
@@ -225,6 +236,7 @@ export function SessionProvider({
     authError,
     signInWithMagicLink,
     signOut,
+    refreshProfile,
   ])
 
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>

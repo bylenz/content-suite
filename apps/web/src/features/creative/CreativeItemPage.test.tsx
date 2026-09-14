@@ -38,6 +38,7 @@ const sessionValue: SessionContextValue = {
   authError: null,
   signInWithMagicLink: async () => null,
   signOut: async () => {},
+  refreshProfile: async () => {},
 }
 
 const item: ItemOut = {

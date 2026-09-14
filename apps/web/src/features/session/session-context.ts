@@ -44,6 +44,12 @@ export interface SessionContextValue {
   signInWithMagicLink: (email: string) => Promise<string | null>
   /** Cierra la sesión activa (Supabase Auth o identidad de dev) y vuelve a anónimo */
   signOut: () => Promise<void>
+  /**
+   * Vuelve a pedir `GET /api/v1/me` con el token actual y actualiza `profile`
+   * en sitio (p. ej. tras crear un workspace nuevo). No cambia `status`; un
+   * fallo aquí no fuerza logout, solo deja el perfil como estaba.
+   */
+  refreshProfile: () => Promise<void>
 }
 
 export const SessionContext = createContext<SessionContextValue | null>(null)

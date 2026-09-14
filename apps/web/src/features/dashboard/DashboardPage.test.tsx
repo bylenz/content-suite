@@ -51,6 +51,7 @@ function sessionFor(role: 'CREATOR' | 'CONTENT_REVIEWER' | 'VISUAL_REVIEWER'): S
     authError: null,
     signInWithMagicLink: async () => null,
     signOut: async () => {},
+    refreshProfile: async () => {},
   }
 }
 

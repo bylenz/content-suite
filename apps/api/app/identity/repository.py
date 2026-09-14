@@ -30,3 +30,7 @@ def get_membership(
         BrandMembership.profile_id == profile_id, BrandMembership.brand_id == brand_id
     )
     return session.scalars(stmt).first()
+
+
+def slug_exists(session: Session, slug: str) -> bool:
+    return session.scalar(select(Brand.id).where(Brand.slug == slug)) is not None

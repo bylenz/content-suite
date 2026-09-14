@@ -28,6 +28,7 @@ function sessionWith(role: Membership['role']): SessionContextValue {
     authError: null,
     signInWithMagicLink: async () => null,
     signOut: async () => {},
+    refreshProfile: async () => {},
   }
 }
 

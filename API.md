@@ -19,6 +19,22 @@ Base: `/api/v1`
 GET /api/v1/me
 ```
 
+## Workspaces
+
+Self-serve: any authenticated identity may create a brand and becomes its
+`CREATOR`. No prior membership required (there is none to check yet). The
+caller's `Profile` row is provisioned on first use if it doesn't exist yet.
+
+```http
+POST /api/v1/brands
+```
+
+Body: `{"name": string, 1-200 chars}`. Response: `MembershipOut` for the new
+brand (`brand_id`, `brand_name`, `brand_slug`, `role: CREATOR`). The slug is
+derived from `name` (lowercased, non-alphanumeric runs collapsed to `-`); a
+name that collides with an existing slug gets a numeric suffix
+(`acme`, `acme-2`, ...).
+
 ## Brand DNA
 
 ```http

@@ -2,7 +2,7 @@
 
 import uuid
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict, Field
 
 from app.identity.models import BrandRole
 
@@ -19,3 +19,9 @@ class Me(BaseModel):
     email: str | None
     display_name: str | None
     memberships: list[MembershipOut]
+
+
+class BrandCreateIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    name: str = Field(min_length=1, max_length=200)
