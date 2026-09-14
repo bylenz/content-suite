@@ -1,23 +1,35 @@
 """Application service for brand_dna: role-filtered reads, locked draft upsert,
-transactional publish, and Knowledge status transitions (without sync)."""
+transactional publish, Knowledge status transitions (without sync), and AI
+generation of the draft from a brief (change 013)."""
 
+import json
 import uuid
 from datetime import UTC, datetime
+from typing import Any
 
 from fastapi import HTTPException, status
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from app.ai.contracts import BrandDnaDocument
+from app.ai.ports import TextModel
+from app.ai.runner import run_capability
 from app.brand_dna import policies, repository
 from app.brand_dna.models import BrandDnaStatus, BrandDnaVersion, KnowledgeStatus
 from app.brand_dna.schemas import (
-    BrandDnaDocument,
+    BrandBriefIn,
     BrandDnaVersionOut,
     BrandDnaVersionSummary,
     derive_section_counts,
 )
 from app.identity.auth import AuthenticatedUser
 from app.identity.models import BrandRole
+from app.observability.ports import Tracer
+
+# brand.architect.v1 (app/ai/prompts.py): derives the full BrandDnaDocument
+# from a brief directly, with no retrieval context (change 013 design.md —
+# Knowledge does not exist yet at this point in a new brand's lifecycle).
+GENERATE_PROMPT_ID = "brand.architect.v1"
 
 
 def _flush(session: Session) -> None:
@@ -38,6 +50,7 @@ def _to_out(version: BrandDnaVersion) -> BrandDnaVersionOut:
         published_at=version.published_at,
         knowledge_status=version.knowledge_status,
         section_counts=derive_section_counts(document),
+        brief=version.brief,
     )
 
 
@@ -107,8 +120,19 @@ def _apply_draft_upsert(
     actor_id: uuid.UUID,
     brand_id: uuid.UUID,
     document: BrandDnaDocument,
+    *,
+    brief: dict[str, Any] | None = None,
+    version_id: uuid.UUID | None = None,
 ) -> BrandDnaVersion:
-    """Upsert the single DRAFT under the brand row lock. Caller owns the transaction."""
+    """Upsert the single DRAFT under the brand row lock. Caller owns the transaction.
+
+    `brief` is the generation input (change 013); it is a separate, optional
+    concern from `document`. Manual authoring (`upsert_draft`) never passes it,
+    so it leaves any existing brief on the draft untouched — replacing the
+    document by hand does not erase the brief of a prior AI generation.
+    `version_id` lets a caller pre-bind an id (e.g. for tracing) when a new
+    draft row is created; ignored when an existing draft is replaced in place.
+    """
     if repository.lock_brand(session, brand_id) is None:
         raise _not_found()
     draft = repository.get_draft(session, brand_id)
@@ -117,17 +141,20 @@ def _apply_draft_upsert(
         # replacement, so the stored document is the request's document. ACTIVE/ARCHIVED
         # versions are never modified.
         draft = BrandDnaVersion(
-            id=uuid.uuid4(),
+            id=version_id if version_id is not None else uuid.uuid4(),
             brand_id=brand_id,
             version=repository.max_version(session, brand_id) + 1,
             status=BrandDnaStatus.DRAFT,
             document=document.model_dump(mode="json"),
+            brief=brief,
             created_by=actor_id,
             knowledge_status=KnowledgeStatus.NOT_SYNCED,
         )
         session.add(draft)
     else:
         draft.document = document.model_dump(mode="json")
+        if brief is not None:
+            draft.brief = brief
     _mark_active_outdated(session, brand_id)
     _flush(session)
     return draft
@@ -138,6 +165,74 @@ def _mark_active_outdated(session: Session, brand_id: uuid.UUID) -> None:
     active = repository.get_active(session, brand_id)
     if active is not None and active.knowledge_status == KnowledgeStatus.SYNCED:
         active.knowledge_status = KnowledgeStatus.OUTDATED
+
+
+def _compose_generate_request(brief: BrandBriefIn) -> str:
+    """Direct brief -> document request: no retrieval context (design.md)."""
+    lines = [
+        "BRAND BRIEF:",
+        json.dumps(brief.model_dump(mode="json"), sort_keys=True, default=str),
+        "Respond with JSON matching the BrandDNA document contract: identity, voice, "
+        "communication, visual_rules and restrictions, fully populated from this brief.",
+    ]
+    return "\n".join(lines)
+
+
+async def generate(
+    session: Session,
+    user: AuthenticatedUser,
+    brand_id: uuid.UUID,
+    brief: BrandBriefIn,
+    *,
+    text_adapter: TextModel | None,
+    tracer: Tracer,
+) -> BrandDnaVersionOut:
+    """Generate the full BrandDnaDocument from a brief and persist it as the DRAFT.
+
+    Same upsert path as manual authoring (`_apply_draft_upsert`): replaces an
+    existing DRAFT in place, creates version 1 otherwise, and flips a SYNCED
+    ACTIVE to OUTDATED exactly like `PATCH /draft` does. Never evaluates
+    `knowledge_status` (change 013 design.md: no retrieval context exists at
+    this point in a brand's lifecycle). A missing provider or an invalid
+    structured output never persists a change (run_capability fails before any
+    write happens here).
+    """
+    membership = repository.get_membership(session, user.id, brand_id)
+    policies.require_writer(membership)
+    # Bind the capability span to the row this call will affect: the existing
+    # DRAFT's id when generation is about to replace it, or a fresh id when it
+    # will create version 1. Unlocked peek purely for tracing metadata — the
+    # actual write below re-resolves the draft under the brand row lock, so a
+    # concurrent create/replace race here affects only which id a span cites,
+    # never correctness of the persisted document.
+    existing_draft = repository.get_draft(session, brand_id)
+    version_id = existing_draft.id if existing_draft is not None else uuid.uuid4()
+    run = await run_capability(
+        prompt_id=GENERATE_PROMPT_ID,
+        adapter=text_adapter,
+        tracer=tracer,
+        contract=BrandDnaDocument,
+        request=_compose_generate_request(brief),
+        entity=f"brand:{brand_id}",
+        brand_id=str(brand_id),
+        entity_type="brand_dna_version",
+        entity_id=str(version_id),
+    )
+    brief_payload = brief.model_dump(mode="json")
+    try:
+        draft = _apply_draft_upsert(
+            session, user.id, brand_id, run.output, brief=brief_payload, version_id=version_id
+        )
+        session.commit()
+    except IntegrityError:
+        # Race escaped the lock (partial/unique index): deterministic recovery —
+        # rollback, re-read under lock and re-apply the upsert; never a 5xx.
+        session.rollback()
+        draft = _apply_draft_upsert(
+            session, user.id, brand_id, run.output, brief=brief_payload, version_id=version_id
+        )
+        session.commit()
+    return _to_out(draft)
 
 
 def upsert_draft(

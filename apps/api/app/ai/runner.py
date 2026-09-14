@@ -16,6 +16,7 @@ from pydantic import ValidationError
 
 from app.ai import prompts
 from app.ai.contracts import (
+    BrandDnaDocument,
     ConsistencyResult,
     CreativeOutput,
     VisualAuditResult,
@@ -36,12 +37,16 @@ class RunMetadata:
 
 
 @dataclass(frozen=True, slots=True)
-class RunResult[ContractT: (CreativeOutput, ConsistencyResult, VisualAuditResult)]:
+class RunResult[
+    ContractT: (CreativeOutput, ConsistencyResult, VisualAuditResult, BrandDnaDocument)
+]:
     output: ContractT
     metadata: RunMetadata
 
 
-async def run_capability[ContractT: (CreativeOutput, ConsistencyResult, VisualAuditResult)](
+async def run_capability[
+    ContractT: (CreativeOutput, ConsistencyResult, VisualAuditResult, BrandDnaDocument)
+](
     *,
     prompt_id: str,
     adapter: TextModel | VisionModel | None,
