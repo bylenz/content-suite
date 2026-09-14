@@ -115,3 +115,13 @@ class AppliedContextOut(BaseModel):
     version: int
     brand_dna_version_id: uuid.UUID | None
     applied_rule_ids: list[str]
+
+
+class PipelineOut(_Strict):
+    """Content Pipeline breakdown (change 014): all 7 real `workflow_status`
+    values, always present with an explicit zero count when a brand has no
+    item in that state — never the 4-category mockup grouping (design.md)."""
+
+    brand_id: uuid.UUID
+    counts: dict[CreativeWorkflowStatus, int]
+    total: int
