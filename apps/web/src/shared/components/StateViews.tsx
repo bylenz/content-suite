@@ -218,27 +218,18 @@ function PasswordForm({
 }
 
 /**
- * Vista anónima: el visitante sin sesión no ve el shell. El login real
- * (correo + contraseña de Supabase Auth) es siempre el mecanismo principal;
- * en desarrollo se ofrece además el acceso rápido a una identidad del mapping
- * ignorado de tokens de dev, autenticada de verdad contra `GET /api/v1/me`.
+ * Vista anónima: el visitante sin sesión no ve el shell. El único mecanismo
+ * de entrada es el login real (correo + contraseña de Supabase Auth); la
+ * identidad, las membresías y el rol se resuelven después en el backend con
+ * `GET /api/v1/me`, nunca con datos locales.
  */
-export function SessionMissingState<R extends string>({
-  devRoles,
+export function SessionMissingState({
   authError,
-  onEnterDemo,
   onSignInWithPassword,
 }: {
-  devRoles: readonly R[]
   authError: string | null
-  onEnterDemo?: (role: R) => void
   onSignInWithPassword: (email: string, password: string) => Promise<string | null>
 }) {
-  const roleLabels: Record<string, string> = {
-    creator: 'Creator',
-    content_reviewer: 'Content Reviewer',
-    visual_reviewer: 'Visual Compliance Reviewer',
-  }
   return (
     <div className="flex min-h-dvh items-center justify-center bg-canvas px-4 py-10">
       <Card className="flex w-full max-w-md flex-col items-center gap-5 px-8 py-12 text-center">
@@ -270,35 +261,9 @@ export function SessionMissingState<R extends string>({
           </p>
         </div>
         <PasswordForm onSignInWithPassword={onSignInWithPassword} />
-        {onEnterDemo && devRoles.length > 0 && (
-          <div className="flex w-full flex-col gap-2">
-            <p className="text-xs font-semibold uppercase tracking-wide text-ink-soft">
-              O entra con una identidad de desarrollo
-            </p>
-            <div className="flex flex-col gap-2">
-              {devRoles.map((role) => (
-                <Button
-                  key={role}
-                  type="button"
-                  onClick={() => onEnterDemo?.(role)}
-                >
-                  Entrar como {roleLabels[role] ?? role}
-                </Button>
-              ))}
-            </div>
-          </div>
-        )}
         {authError && (
           <p role="alert" className="max-w-xs text-xs leading-relaxed text-danger-fg">
-            No se pudo autenticar la última identidad ({authError}). Verifica que los
-            tokens de dev estén vigentes y reintenta.
-          </p>
-        )}
-        {devRoles.length > 0 && (
-          <p className="max-w-xs text-xs leading-relaxed text-ink-soft">
-            Los tokens de desarrollo viven solo en tu máquina (archivo ignorado), expiran
-            cada 15 minutos y no otorgan permisos: la membresía y el rol se resuelven en el
-            backend.
+            No se pudo autenticar la sesión ({authError}). Vuelve a iniciar sesión.
           </p>
         )}
       </Card>

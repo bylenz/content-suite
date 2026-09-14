@@ -9,7 +9,6 @@ describe('SessionMissingState', () => {
     const onSignInWithPassword = vi.fn().mockResolvedValue(null)
     render(
       <SessionMissingState
-        devRoles={[]}
         authError={null}
         onSignInWithPassword={onSignInWithPassword}
       />,
@@ -28,7 +27,6 @@ describe('SessionMissingState', () => {
     const onSignInWithPassword = vi.fn().mockResolvedValue('Credenciales inválidas.')
     render(
       <SessionMissingState
-        devRoles={[]}
         authError={null}
         onSignInWithPassword={onSignInWithPassword}
       />,
@@ -43,30 +41,13 @@ describe('SessionMissingState', () => {
     )
   })
 
-  it('en desarrollo, muestra el login real y los accesos de identidad de dev a la vez', () => {
+  it('solo ofrece el login real: no existe entrada con identidades de prueba', () => {
     render(
-      <SessionMissingState
-        devRoles={['creator']}
-        authError={null}
-        onEnterDemo={vi.fn()}
-        onSignInWithPassword={vi.fn().mockResolvedValue(null)}
-      />,
-    )
-
-    expect(screen.getByLabelText('Correo')).not.toBeNull()
-    expect(screen.getByRole('button', { name: 'Entrar como Creator' })).not.toBeNull()
-  })
-
-  it('sin identidades de dev (build de producción), solo muestra el login real', () => {
-    render(
-      <SessionMissingState
-        devRoles={[]}
-        authError={null}
-        onSignInWithPassword={vi.fn().mockResolvedValue(null)}
-      />,
+      <SessionMissingState authError={null} onSignInWithPassword={vi.fn().mockResolvedValue(null)} />,
     )
 
     expect(screen.getByLabelText('Correo')).not.toBeNull()
     expect(screen.queryByText(/identidad de desarrollo/)).toBeNull()
+    expect(screen.queryByRole('button', { name: /Entrar como/ })).toBeNull()
   })
 })

@@ -428,24 +428,32 @@ export function DashboardPage() {
             Mantén tu marca consistente en cada pieza de contenido.
           </p>
         </div>
-        {/* CTA del encabezado: real cuando el Creator aún no publica; la
-            generación de contenido llega con Creative Studio (futura). */}
+        {/* CTA del encabezado (solo Creator): sin Brand DNA publicado, el
+            primer paso es crearlo; con versión activa, crear contenido en
+            Creative Studio. Los revisores no tienen acción de escritura. */}
         {isCreator && dna.data && !active && (
           <Button asChild size="lg" className="w-fit shrink-0">
             <Link to="/brand-dna/create">Crear Brand DNA</Link>
           </Button>
         )}
         {isCreator && active && (
-          <span
-            aria-disabled="true"
-            title="Creative Studio llega en una change futura"
-            className="clay clay-chip inline-flex w-fit shrink-0 cursor-default items-center gap-2 px-5 py-3 text-sm font-semibold text-ink-muted opacity-80"
-          >
-            Create content
-            <span className="rounded-full bg-tint-steel px-2 py-0.5 text-[9.5px] font-bold uppercase tracking-wide">
-              Próximamente
-            </span>
-          </span>
+          <Button asChild size="lg" className="w-fit shrink-0">
+            <Link to="/creative">
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.4"
+                strokeLinecap="round"
+                aria-hidden="true"
+              >
+                <path d="M12 5v14M5 12h14" />
+              </svg>
+              Crear contenido
+            </Link>
+          </Button>
         )}
       </motion.header>
 

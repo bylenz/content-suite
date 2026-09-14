@@ -1,25 +1,25 @@
-import { NavLink } from 'react-router'
+import { Link, NavLink } from 'react-router'
 import { useSession } from '../session/useSession'
-import { ROLE_LABELS, WORKSPACE_FALLBACK_NAME, type DemoRole } from '../session/roles'
+import { ROLE_LABELS, WORKSPACE_FALLBACK_NAME } from '../session/roles'
 import { groupNavItems, NAV_ITEMS } from './nav'
 import { NavIcon } from './NavIcon'
 
-/** Etiqueta de la identidad de dev para el conmutador (solo presentación). */
-const DEMO_ROLE_LABELS: Record<DemoRole, string> = {
-  creator: 'Creator',
-  content_reviewer: 'Content Reviewer',
-  visual_reviewer: 'Visual Compliance Reviewer',
-}
+const GROUP_LABELS = {
+  WORKSPACE: 'Workspace',
+  BRAND: 'Brand',
+  CREATE: 'Create',
+  GOVERNANCE: 'Governance',
+  SYSTEM: 'System',
+} as const
 
 /**
  * Sidebar persistente y elevada, con navegación azul acolchada por rol.
- * La identidad y el rol provienen de `/api/v1/me`; el conmutador de identidad
- * de dev solo selecciona el token adjunto. Las secciones sin change
- * implementada se listan deshabilitadas.
+ * La identidad, las membresías y el rol provienen de `/api/v1/me`. El
+ * conmutador de workspace cambia entre las marcas de la misma identidad y
+ * el enlace "Nuevo workspace" lleva al alta self-serve (`POST /brands`).
  */
 export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
-  const { profile, switchRole, switchBrand, availableDevRoles, nextDevRole, signOut } =
-    useSession()
+  const { profile, switchBrand, signOut } = useSession()
   const role = profile?.activeMembership?.role
   const navItems = role ? NAV_ITEMS[role] : Object.values(NAV_ITEMS)[0]
   const grouped = groupNavItems(navItems)
@@ -38,7 +38,7 @@ export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
         <span className="text-[15px] font-bold tracking-tight text-ink">Content Suite</span>
       </div>
 
-      <div className="clay clay-chip mb-3 flex items-center gap-3 px-3 py-2.5">
+      <div className="clay clay-chip mb-1.5 flex items-center gap-3 px-3 py-2.5">
         <span
           aria-hidden="true"
           className="clay-icon size-8 shrink-0 bg-strawberry text-[12px] font-bold text-white shadow-[5px_6px_12px_rgba(230,57,70,.35),-3px_-3px_8px_rgba(255,255,255,.9),inset_0_1.5px_0_rgba(255,255,255,.4),inset_-2px_-3px_6px_rgba(29,53,87,.28)]"
@@ -75,20 +75,31 @@ export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
           </span>
         )}
       </div>
+      <Link
+        to="/workspaces/new"
+        onClick={onNavigate}
+        className="mb-2 flex items-center gap-2 rounded-[10px] px-3 py-1 text-[11.5px] font-semibold text-ink-soft transition-colors hover:text-steel"
+      >
+        <svg
+          width="12"
+          height="12"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.6"
+          strokeLinecap="round"
+          aria-hidden="true"
+        >
+          <path d="M12 5v14M5 12h14" />
+        </svg>
+        Nuevo workspace
+      </Link>
 
       <nav aria-label="Principal" className="flex min-h-0 flex-1 flex-col overflow-y-auto">
         {grouped.map(({ group, items }) => (
           <div key={group}>
             <p className="px-2.5 pb-1.5 pt-3.5 text-[10.5px] font-bold uppercase tracking-[0.08em] text-ink-soft">
-              {group === 'WORKSPACE'
-                ? 'Workspace'
-                : group === 'BRAND'
-                  ? 'Brand'
-                  : group === 'CREATE'
-                    ? 'Create'
-                    : group === 'SYSTEM'
-                      ? 'System'
-                      : 'Governance'}
+              {GROUP_LABELS[group]}
             </p>
             <ul className="flex flex-col gap-1">
               {items.map((item) =>
@@ -159,32 +170,7 @@ export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
             {role ? ROLE_LABELS[role] : '—'}
           </span>
         </span>
-        <svg
-          width="14"
-          height="14"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2.2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          aria-hidden="true"
-          className="shrink-0 text-ink-soft"
-        >
-          <path d="M9 6l6 6-6 6" />
-        </svg>
       </div>
-      {/* Conmutador de identidad de dev: solo selecciona el token adjunto;
-          el rol mostrado siempre proviene de la API. */}
-      {nextDevRole && availableDevRoles.length > 1 && (
-        <button
-          type="button"
-          onClick={() => switchRole(nextDevRole)}
-          className="rounded-[10px] pt-2 text-center text-[11px] font-semibold text-ink-soft transition-colors hover:text-steel"
-        >
-          Cambiar a {DEMO_ROLE_LABELS[nextDevRole]} (dev)
-        </button>
-      )}
       <button
         type="button"
         onClick={() => void signOut()}

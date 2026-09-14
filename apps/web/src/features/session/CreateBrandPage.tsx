@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react'
+import { Link, useNavigate } from 'react-router'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -8,39 +9,56 @@ import { useCreateBrand } from './api'
 import { useSession } from './useSession'
 
 /**
- * Onboarding self-serve: una identidad autenticada sin ninguna membresía
- * (`profile.activeMembership === null`) no tiene marca activa que mostrar -- en vez
- * de dejar el shell vacío, se le ofrece crear su propio workspace. Quien crea
- * la marca se vuelve automáticamente su CREATOR (ver API.md "Workspaces").
- * Tras el 201, `refreshProfile()` vuelve a pedir `/me`: la nueva membresía
- * queda activa y `AppLayout` deja de mostrar esta pantalla por sí solo.
+ * Alta self-serve de workspace (`POST /brands`): quien crea la marca se
+ * vuelve automáticamente su CREATOR (ver API.md "Workspaces").
+ *
+ * Dos contextos con el mismo formulario:
+ * - Onboarding: identidad autenticada sin ninguna membresía
+ *   (`profile.activeMembership === null`). `AppLayout` la muestra en vez de
+ *   un shell vacío; tras el 201, `refreshProfile(brand_id)` activa la nueva
+ *   marca y el shell aparece por sí solo.
+ * - Desde el shell (`/workspaces/new`): la identidad ya tiene marcas y crea
+ *   otra. Tras el 201 se activa la nueva marca y se vuelve al Dashboard.
  */
 export function CreateBrandPage() {
   const [name, setName] = useState('')
-  const { refreshProfile } = useSession()
+  const { profile, refreshProfile } = useSession()
+  const navigate = useNavigate()
   const createBrand = useCreateBrand()
+  const hasWorkspaces = (profile?.memberships.length ?? 0) > 0
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
+    let brandId: string
     try {
-      await createBrand.mutateAsync(name)
+      const membership = await createBrand.mutateAsync(name.trim())
+      brandId = membership.brand_id
     } catch {
       // El error queda en `createBrand.error` (react-query) y se muestra
       // abajo; nada más que hacer aquí.
       return
     }
-    await refreshProfile()
+    await refreshProfile(brandId)
+    if (hasWorkspaces) navigate('/', { replace: true })
   }
 
   const errorMessage =
     createBrand.error instanceof ApiError
-      ? createBrand.error.message
+      ? createBrand.error.code === 'PERMISSION_DENIED' || createBrand.error.status === 403
+        ? 'Tu cuenta no está autorizada para crear workspaces.'
+        : createBrand.error.message
       : createBrand.error
         ? 'No se pudo crear el workspace.'
         : null
 
   return (
-    <div className="flex min-h-dvh items-center justify-center bg-canvas px-4 py-10">
+    <div
+      className={
+        hasWorkspaces
+          ? 'flex justify-center py-6'
+          : 'flex min-h-dvh items-center justify-center bg-canvas px-4 py-10'
+      }
+    >
       <Card className="flex w-full max-w-md flex-col items-center gap-4 px-8 py-12 text-center">
         <span
           aria-hidden="true"
@@ -61,11 +79,12 @@ export function CreateBrandPage() {
         </span>
         <div className="max-w-sm">
           <h1 className="text-lg font-bold tracking-tight text-ink">
-            Crea tu primer workspace
+            {hasWorkspaces ? 'Crea un nuevo workspace' : 'Crea tu primer workspace'}
           </h1>
           <p className="mt-2 text-sm leading-relaxed text-ink-muted">
-            Tu cuenta todavía no pertenece a ninguna marca. Dale un nombre a tu
-            workspace y te volverás su Creator.
+            {hasWorkspaces
+              ? 'Cada workspace es una marca con su propio Brand DNA y contenido. Serás su Creator.'
+              : 'Tu cuenta todavía no pertenece a ninguna marca. Dale un nombre a tu workspace y te volverás su Creator.'}
           </p>
         </div>
         <form onSubmit={handleSubmit} className="flex w-full flex-col gap-3 text-left">
@@ -93,6 +112,11 @@ export function CreateBrandPage() {
             </p>
           )}
         </form>
+        {hasWorkspaces && (
+          <Link to="/" className="text-[12.5px] font-semibold text-ink-soft hover:text-steel">
+            ← Volver al Dashboard
+          </Link>
+        )}
       </Card>
     </div>
   )

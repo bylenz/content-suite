@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { MemoryRouter, Route, Routes } from 'react-router'
 import { SessionContext, type SessionContextValue } from './session-context'
 import { ApiError, apiFetch } from '../../shared/api/client'
 import { CreateBrandPage } from './CreateBrandPage'
@@ -17,20 +18,18 @@ const fetchMock = vi.mocked(apiFetch)
 
 ;(globalThis as Record<string, unknown>).IS_REACT_ACT_ENVIRONMENT = true
 
-function sessionWithRefresh(refreshProfile: () => Promise<void>): SessionContextValue {
+function sessionWithRefresh(
+  refreshProfile: (activateBrandId?: string) => Promise<void>,
+  memberships: Membership[] = [],
+): SessionContextValue {
   return {
     status: 'authenticated',
     profile: {
       displayName: 'Nuevo usuario',
       email: 'new@example.com',
-      memberships: [],
-      activeMembership: null,
+      memberships,
+      activeMembership: memberships[0] ?? null,
     },
-    selectedRole: null,
-    availableDevRoles: [],
-    authenticate: () => {},
-    switchRole: () => {},
-    nextDevRole: null,
     authError: null,
     signInWithPassword: async () => null,
     signOut: async () => {},
@@ -39,12 +38,20 @@ function sessionWithRefresh(refreshProfile: () => Promise<void>): SessionContext
   }
 }
 
-function renderPage(refreshProfile: () => Promise<void> = async () => {}) {
+function renderPage(
+  refreshProfile: (activateBrandId?: string) => Promise<void> = async () => {},
+  memberships: Membership[] = [],
+) {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   return render(
     <QueryClientProvider client={queryClient}>
-      <SessionContext.Provider value={sessionWithRefresh(refreshProfile)}>
-        <CreateBrandPage />
+      <SessionContext.Provider value={sessionWithRefresh(refreshProfile, memberships)}>
+        <MemoryRouter initialEntries={['/workspaces/new']}>
+          <Routes>
+            <Route path="/workspaces/new" element={<CreateBrandPage />} />
+            <Route path="/" element={<p>Dashboard de prueba</p>} />
+          </Routes>
+        </MemoryRouter>
       </SessionContext.Provider>
     </QueryClientProvider>,
   )
@@ -72,7 +79,8 @@ describe('CreateBrandPage', () => {
     })
     fireEvent.click(screen.getByRole('button', { name: 'Crear workspace' }))
 
-    await vi.waitFor(() => expect(refreshProfile).toHaveBeenCalledTimes(1))
+    await vi.waitFor(() => expect(refreshProfile).toHaveBeenCalledWith('brand-new'))
+    expect(screen.queryByText('Dashboard de prueba')).toBeNull()
     expect(fetchMock).toHaveBeenCalledWith('/api/v1/brands', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -100,5 +108,46 @@ describe('CreateBrandPage', () => {
       'disabled',
       true,
     )
+  })
+
+  it('desde el shell (ya con marcas), activa la nueva y vuelve al Dashboard', async () => {
+    const existing: Membership = {
+      brand_id: 'brand-1',
+      brand_name: 'Kinu',
+      brand_slug: 'kinu',
+      role: 'CREATOR',
+    }
+    const created: Membership = {
+      brand_id: 'brand-2',
+      brand_name: 'Segunda',
+      brand_slug: 'segunda',
+      role: 'CREATOR',
+    }
+    fetchMock.mockResolvedValue(created)
+    const refreshProfile = vi.fn().mockResolvedValue(undefined)
+    renderPage(refreshProfile, [existing])
+
+    expect(screen.getByText('Crea un nuevo workspace')).toBeDefined()
+    fireEvent.change(screen.getByPlaceholderText('Nombre de tu marca'), {
+      target: { value: 'Segunda' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Crear workspace' }))
+
+    await vi.waitFor(() => expect(refreshProfile).toHaveBeenCalledWith('brand-2'))
+    expect(await screen.findByText('Dashboard de prueba')).toBeDefined()
+  })
+
+  it('explica el 403 del allowlist sin refrescar el perfil', async () => {
+    fetchMock.mockRejectedValueOnce(new ApiError('Forbidden', 403, 'PERMISSION_DENIED'))
+    const refreshProfile = vi.fn().mockResolvedValue(undefined)
+    renderPage(refreshProfile)
+
+    fireEvent.change(screen.getByPlaceholderText('Nombre de tu marca'), {
+      target: { value: 'Bloqueada' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Crear workspace' }))
+
+    expect(await screen.findByText(/no está autorizada para crear workspaces/)).toBeDefined()
+    expect(refreshProfile).not.toHaveBeenCalled()
   })
 })

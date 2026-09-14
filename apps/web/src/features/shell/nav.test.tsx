@@ -30,11 +30,6 @@ function sessionWith(
       memberships: [active, ...extraMemberships],
       activeMembership: active,
     },
-    selectedRole: null,
-    availableDevRoles: [],
-    authenticate: () => {},
-    switchRole: () => {},
-    nextDevRole: null,
     authError: null,
     signInWithPassword: async () => null,
     signOut: async () => {},
@@ -119,5 +114,19 @@ describe('conmutador de workspace', () => {
     select.dispatchEvent(new Event('change', { bubbles: true }))
 
     expect(switchBrand).toHaveBeenCalledWith('brand-2')
+  })
+})
+
+describe('alta de workspace y sesión real', () => {
+  it('ofrece el enlace "Nuevo workspace" hacia /workspaces/new', () => {
+    renderSidebar('CREATOR')
+    const link = screen.getByRole('link', { name: /Nuevo workspace/ }) as HTMLAnchorElement
+    expect(link.getAttribute('href')).toBe('/workspaces/new')
+  })
+
+  it('no muestra ningún conmutador de identidad de prueba', () => {
+    renderSidebar('CREATOR')
+    expect(screen.queryByText(/\(dev\)/)).toBeNull()
+    expect(screen.getByRole('button', { name: 'Cerrar sesión' })).toBeDefined()
   })
 })

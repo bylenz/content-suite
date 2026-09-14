@@ -97,7 +97,7 @@ beforeEach(() => {
 afterEach(cleanup)
 
 describe('SessionProvider con Supabase Auth', () => {
-  it('sin sesión de Supabase ni identidad de dev guardada, termina anónimo', async () => {
+  it('sin sesión de Supabase, termina anónimo sin llamar a la API', async () => {
     const { client } = createFakeSupabaseClient(null)
     renderWithProvider(client)
 
@@ -142,7 +142,7 @@ describe('SessionProvider con Supabase Auth', () => {
     expect(setApiAuthToken).toHaveBeenCalledWith(null)
   })
 
-  it('sin cliente Supabase configurado (dev sin env vars), degrada a solo identidades de dev', async () => {
+  it('sin cliente Supabase configurado (dev sin env vars), queda anónimo', async () => {
     renderWithProvider(null)
 
     await waitFor(() => expect(screen.getByTestId('status').textContent).toBe('anonymous'))

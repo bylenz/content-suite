@@ -44,11 +44,6 @@ function sessionFor(role: 'CREATOR' | 'CONTENT_REVIEWER' | 'VISUAL_REVIEWER'): S
       memberships: [{ brand_id: 'brand-1', brand_name: 'Kinu', brand_slug: 'kinu', role }],
       activeMembership: { brand_id: 'brand-1', brand_name: 'Kinu', brand_slug: 'kinu', role },
     },
-    selectedRole: 'creator',
-    availableDevRoles: [],
-    authenticate: () => {},
-    switchRole: () => {},
-    nextDevRole: null,
     authError: null,
     signInWithPassword: async () => null,
     signOut: async () => {},
@@ -231,5 +226,55 @@ describe('DashboardPage — Recent Activity widget', () => {
     expect(await screen.findByText('Página 1 de 2')).toBeDefined()
     expect(screen.getByRole('button', { name: '← Anterior' })).toHaveProperty('disabled', true)
     expect(screen.getByRole('button', { name: 'Siguiente →' })).toHaveProperty('disabled', false)
+  })
+})
+
+describe('DashboardPage — CTA del Creator', () => {
+  const ACTIVE_DNA: BrandDnaOverview = {
+    active: {
+      id: 'dna-1',
+      version: 1,
+      status: 'PUBLISHED',
+      knowledge_status: 'SYNCED',
+      section_counts: {
+        identity: 1,
+        voice: 1,
+        communication: 1,
+        visual_rules: 1,
+        restrictions: 1,
+      },
+      created_at: '2026-09-01T00:00:00Z',
+      updated_at: '2026-09-01T00:00:00Z',
+    } as unknown as NonNullable<BrandDnaOverview['active']>,
+    draft: null,
+  }
+
+  it('con Brand DNA activo, "Crear contenido" es un enlace real a Creative Studio', async () => {
+    routeApi({ brandDna: ACTIVE_DNA })
+    renderDashboard('CREATOR')
+
+    const link = (await screen.findByRole('link', { name: /Crear contenido/ })) as HTMLAnchorElement
+    expect(link.getAttribute('href')).toBe('/creative')
+    expect(screen.queryByText('Próximamente')).toBeNull()
+  })
+
+  it('sin Brand DNA activo, el CTA lleva a crear el Brand DNA', async () => {
+    routeApi({ brandDna: EMPTY_DNA })
+    renderDashboard('CREATOR')
+
+    // Encabezado + hero ofrecen el mismo destino real.
+    const links = (await screen.findAllByRole('link', { name: 'Crear Brand DNA' })) as HTMLAnchorElement[]
+    expect(links.length).toBeGreaterThan(0)
+    for (const link of links) expect(link.getAttribute('href')).toBe('/brand-dna/create')
+    expect(screen.queryByRole('link', { name: /Crear contenido/ })).toBeNull()
+  })
+
+  it('los revisores no ven ningún CTA de escritura', async () => {
+    routeApi({ brandDna: ACTIVE_DNA })
+    renderDashboard('CONTENT_REVIEWER')
+
+    expect(await screen.findByText('Brand DNA publicado')).toBeDefined()
+    expect(screen.queryByRole('link', { name: /Crear contenido/ })).toBeNull()
+    expect(screen.queryByRole('link', { name: 'Crear Brand DNA' })).toBeNull()
   })
 })

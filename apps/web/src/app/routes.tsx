@@ -16,6 +16,7 @@ import { ApprovalsQueuePage } from '../features/approvals/ApprovalsQueuePage'
 import { ApprovalDetailPage } from '../features/approvals/ApprovalDetailPage'
 import { BrandAuditQueuePage } from '../features/brand-audit/BrandAuditQueuePage'
 import { BrandAuditDetailPage } from '../features/brand-audit/BrandAuditDetailPage'
+import { CreateBrandPage } from '../features/session/CreateBrandPage'
 
 export function AppRoutes() {
   return (
@@ -25,6 +26,7 @@ export function AppRoutes() {
       <Route element={<RequireSession />}>
         <Route element={<AppLayout />}>
           <Route index element={<DashboardPage />} />
+          <Route path="/workspaces/new" element={<CreateBrandPage />} />
           <Route path="/brand-dna" element={<BrandDnaPage />} />
           <Route path="/brand-dna/create" element={<BrandDnaCreatePage />} />
           <Route path="/brand-dna/generate" element={<BrandDnaGeneratePage />} />

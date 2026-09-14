@@ -101,20 +101,22 @@ Variables de entorno (ver `apps/api/.env.example` y `apps/web/.env.example`):
 - `CONTENT_SUITE_DATABASE_URL` — por defecto `sqlite:///./content_suite_dev.db`; el objetivo canónico es `postgresql+psycopg://…` (Supabase).
 - `VITE_API_URL` — base de la API para el cliente web (por defecto `http://localhost:8000`).
 
-El shell web arranca anónimo. En desarrollo, la entrada al workspace es explícita desde la vista de sesión faltante y autentica de verdad: el botón de cada identidad adjunta el token de dev correspondiente y la sesión solo se consolida tras un `GET /api/v1/me` 200; identidad y rol provienen únicamente de esa respuesta. La API acepta CORS desde `http://localhost:5173`.
+El shell web arranca anónimo. La única entrada es el login real con Supabase Auth (correo + contraseña, `VITE_SUPABASE_URL` + `VITE_SUPABASE_ANON_KEY`): el access token se adjunta a la API y la sesión solo se consolida tras un `GET /api/v1/me` 200; identidad, membresías y rol provienen únicamente de esa respuesta (base de datos). No existe modo demo ni identidades de prueba en el frontend. La API acepta CORS desde `http://localhost:5173`.
 
-### Capability Brand DNA: seeds y tokens de desarrollo
+Una cuenta autenticada sin membresías ve el onboarding "Crea tu primer workspace"; desde el sidebar, "Nuevo workspace" (`/workspaces/new`) crea marcas adicionales y el conmutador cambia entre ellas. Ambos usan `POST /api/v1/brands`, gateado por `CONTENT_SUITE_BRAND_CREATION_ALLOWLIST` (correo del creador; `*` en local).
 
-Flujo local completo de `002-brand-dna-authoring` (desde `apps/api`, con `CONTENT_SUITE_AUTH_JWT_SECRET` e `ISSUER` ya configurados en `apps/api/.env`):
+### Seeds y tokens de desarrollo (solo API)
+
+Flujo local (desde `apps/api`, con `CONTENT_SUITE_AUTH_JWT_SECRET` e `ISSUER` ya configurados en `apps/api/.env`):
 
 ```bash
 npm run api:migrate                            # 1. migraciones (incluye brand_dna_versions)
 cd apps/api
 uv run python -m scripts.seed                 # 2. marca Kinu + 3 perfiles + membresías (idempotente)
-uv run python -m scripts.dev_tokens           # 3. acuña tokens de 15 min y escribe el mapping
+uv run python -m scripts.dev_tokens           # 3. acuña tokens HS256 de 15 min para probar la API
 ```
 
-El paso 3 escribe `apps/web/.env.development.local` con el mapping rol → token (`VITE_DEV_API_TOKEN_CREATOR`, `VITE_DEV_API_TOKEN_CONTENT_REVIEWER`, `VITE_DEV_API_TOKEN_VISUAL_REVIEWER`). Ese archivo está ignorado por Git (`.env.*` en `.gitignore`), solo lo carga Vite en modo development y el script nunca imprime los tokens: regenerar cuando expiren. En builds de producción la lectura del mapping queda fuera del código ejecutable (`import.meta.env.DEV` es estático) y la sesión permanece anónima hasta la change de Supabase Auth.
+Los tokens del paso 3 sirven para llamar a la API directamente (curl/httpie) con las identidades sembradas; el frontend ya no los lee (el mapping `VITE_DEV_API_TOKEN_*` que el script escribe en `apps/web/.env.development.local` es inerte). Para navegar la app hay que iniciar sesión con una cuenta real de Supabase Auth; para probar un rol revisor, esa cuenta necesita una fila en `brand_memberships` con el rol correspondiente.
 
 Con `npm run api:dev` y `npm run dev:web` activos, la conectividad autenticada end-to-end verificada localmente es: CORS preflight desde `http://localhost:5173` con header `authorization` → 200; `GET /api/v1/me` con token de dev → 200 con membresía `kinu` y rol resuelto en backend; sin token o token inválido → 401 con envelope `{error:{code:"UNAUTHENTICATED"}}` y la sesión web permanece anónima. Sobre `/api/v1/brands/{brand_id}/brand-dna` el Creator puede crear/editar el borrador y publicar (`expected_draft_id`); los revisores solo leen versiones publicadas (`draft: null`).
 
