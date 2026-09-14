@@ -5,6 +5,7 @@ import { DashboardPage } from '../features/dashboard/DashboardPage'
 import { NotFoundPage } from '../features/dashboard/NotFoundPage'
 import { BrandDnaPage } from '../features/brand-dna/BrandDnaPage'
 import { BrandDnaCreatePage } from '../features/brand-dna/BrandDnaCreatePage'
+import { BrandDnaGeneratePage } from '../features/brand-dna/BrandDnaGeneratePage'
 import { BrandDnaEditPage } from '../features/brand-dna/BrandDnaEditPage'
 import { BrandDnaVersionPage } from '../features/brand-dna/BrandDnaVersionPage'
 import { ObservabilityPage } from '../features/observability/ObservabilityPage'
@@ -24,6 +25,7 @@ export function AppRoutes() {
           <Route index element={<DashboardPage />} />
           <Route path="/brand-dna" element={<BrandDnaPage />} />
           <Route path="/brand-dna/create" element={<BrandDnaCreatePage />} />
+          <Route path="/brand-dna/generate" element={<BrandDnaGeneratePage />} />
           <Route path="/brand-dna/edit" element={<BrandDnaEditPage />} />
           <Route path="/brand-dna/versions/:version" element={<BrandDnaVersionPage />} />
           <Route path="/observability" element={<ObservabilityPage />} />

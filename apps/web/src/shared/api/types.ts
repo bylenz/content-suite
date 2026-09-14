@@ -70,6 +70,37 @@ export interface BrandDnaDocument {
 
 export type SectionKey = keyof BrandDnaDocument
 
+/** Brief de onboarding que origina una generación (`POST .../generate`). */
+export interface BrandBasicsIn {
+  brand_name: string
+  offering: string
+  // La API serializa el campo opcional como `null`, no lo omite.
+  description: string | null
+}
+
+export interface AudienceIn {
+  primary_audience: string
+  market: string
+  description: string
+  tags: string[]
+}
+
+export interface PersonalityToneIn {
+  traits: string[]
+}
+
+export interface BrandRulesIn {
+  always: string[]
+  never: string[]
+}
+
+export interface BrandBriefIn {
+  basics: BrandBasicsIn
+  audience: AudienceIn
+  personality: PersonalityToneIn
+  rules: BrandRulesIn
+}
+
 export interface BrandDnaVersion {
   id: string
   brand_id: string
@@ -81,6 +112,8 @@ export interface BrandDnaVersion {
   published_at: string | null
   knowledge_status: KnowledgeStatus
   section_counts: Record<SectionKey, number>
+  /** El brief que originó la generación (null si nunca se generó por IA). */
+  brief: BrandBriefIn | null
 }
 
 export interface BrandDnaVersionSummary {
