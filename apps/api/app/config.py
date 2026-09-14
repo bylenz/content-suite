@@ -31,6 +31,13 @@ class Settings(BaseSettings):
     openai_embedding_model: str = ""
     openai_embedding_dimensions: int = 0
     openai_text_model: str = ""
+    # Private storage (change 008): empty defaults keep storage unconfigured; the
+    # resolver treats partial configuration the same as absent (503, no fallback).
+    storage_project_url: str = ""
+    storage_service_key: str = ""
+    storage_bucket: str = ""
+    storage_signed_url_ttl_seconds: int = 300
+    storage_max_upload_bytes: int = 5 * 1024 * 1024
 
 
 @lru_cache
