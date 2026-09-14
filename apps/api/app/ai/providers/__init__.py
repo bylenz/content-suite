@@ -10,7 +10,7 @@ NAMES, never their values.
 import logging
 from functools import cache
 
-from app.ai.ports import EmbeddingModel, TextModel
+from app.ai.ports import EmbeddingModel, TextModel, VisionModel
 from app.config import Settings
 
 logger = logging.getLogger(__name__)
@@ -109,3 +109,19 @@ def _resolve_text_cached(
     return OpenAITextModel(
         api_key=openai_api_key, model=openai_text_model or DEFAULT_TEXT_MODEL
     )
+
+
+def resolve_vision_model(settings: Settings) -> VisionModel | None:
+    """Resolve the Vision adapter from settings (compositional root).
+
+    No production Vision provider is implemented yet (out of scope for
+    change 008-visual-compliance: it consumes the `VisionModel` port defined
+    by AI Platform, it does not add a new provider adapter for it). This
+    always resolves to `None` -- the same "unconfigured provider" shape used
+    everywhere else -- so `run_capability` fails fast with
+    `AIProviderNotConfiguredError` (503) until a real adapter lands. Tests
+    and local dev inject `app.ai.fakes.FakeVisionModel` via dependency
+    override instead of going through this resolver.
+    """
+    del settings  # no configuration reads a real adapter into existence yet
+    return None

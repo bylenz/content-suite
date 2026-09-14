@@ -13,6 +13,7 @@ from app.health.router import router as health_router
 from app.identity.router import router as identity_router
 from app.knowledge.router import router as knowledge_router
 from app.observability.router import router as observability_router
+from app.visual_audit.router import router as visual_audit_router
 
 
 def create_app() -> FastAPI:
@@ -31,6 +32,7 @@ def create_app() -> FastAPI:
     app.include_router(knowledge_router, prefix="/api/v1")
     app.include_router(creative_router, prefix="/api/v1")
     app.include_router(governance_router, prefix="/api/v1")
+    app.include_router(visual_audit_router, prefix="/api/v1")
     app.include_router(observability_router, prefix="/api/v1")
     app.include_router(activity_router, prefix="/api/v1")
     errors.register_handlers(app)

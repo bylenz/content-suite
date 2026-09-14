@@ -12,11 +12,13 @@ export interface NavItem {
 
 /**
  * Navegación por rol según docs/UI_UX.md, con el rol resuelto por el backend
- * (`/api/v1/me`). Dashboard, Brand DNA, Creative Studio y Observability
- * tienen ruta; el resto se lista deshabilitado hasta su change correspondiente.
- * Brand DNA es lectura para revisores y Observability es solo lectura para
- * los tres roles (metadatos sanitizados de sus marcas): la interfaz oculta
- * los controles de escritura, pero la autoridad vive en el backend.
+ * (`/api/v1/me`). Todas las entradas listadas ya tienen ruta implementada
+ * (Dashboard, Brand DNA, Creative Studio, Approvals, Brand Audit y
+ * Observability); items futuros de otras changes se listan sin `to` hasta
+ * su implementación. Brand DNA es lectura para revisores y Observability es
+ * solo lectura para los tres roles (metadatos sanitizados de sus marcas):
+ * la interfaz oculta los controles de escritura, pero la autoridad vive en
+ * el backend. Brand Audit (change 008) es exclusivo de `VISUAL_REVIEWER`.
  */
 export const NAV_ITEMS: Record<BrandRole, NavItem[]> = {
   CREATOR: [
@@ -34,7 +36,7 @@ export const NAV_ITEMS: Record<BrandRole, NavItem[]> = {
   VISUAL_REVIEWER: [
     { id: 'dashboard', label: 'Dashboard', group: 'WORKSPACE', to: '/' },
     { id: 'brand-dna', label: 'Brand DNA', group: 'BRAND', to: '/brand-dna' },
-    { id: 'brand-audit', label: 'Brand Audit', group: 'GOVERNANCE' },
+    { id: 'brand-audit', label: 'Brand Audit', group: 'GOVERNANCE', to: '/brand-audit' },
     { id: 'observability', label: 'Observability', group: 'SYSTEM', to: '/observability' },
   ],
 }
