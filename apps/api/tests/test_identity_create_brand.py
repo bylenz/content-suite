@@ -4,7 +4,9 @@ from fastapi.testclient import TestClient
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.config import Settings, get_settings
 from app.identity.models import Brand, BrandMembership, Profile
+from app.main import app
 from tests.conftest import auth_header, make_token
 
 
@@ -132,3 +134,61 @@ def test_identity_without_email_claim_is_422(client: TestClient) -> None:
     response = client.post("/api/v1/brands", headers=auth_header(token), json={"name": "X"})
 
     assert response.status_code == 422
+
+
+def test_email_outside_the_allowlist_is_403(client: TestClient) -> None:
+    app.dependency_overrides[get_settings] = lambda: Settings(
+        brand_creation_allowlist="allowed@example.com"
+    )
+    try:
+        token = make_token(email="stranger@example.com")
+        response = client.post(
+            "/api/v1/brands", headers=auth_header(token), json={"name": "Nope"}
+        )
+    finally:
+        app.dependency_overrides.pop(get_settings, None)
+
+    assert response.status_code == 403
+
+
+def test_email_on_the_allowlist_is_matched_case_insensitively(
+    client: TestClient, session: Session
+) -> None:
+    app.dependency_overrides[get_settings] = lambda: Settings(
+        brand_creation_allowlist="Allowed@Example.com"
+    )
+    try:
+        token = make_token(email="allowed@example.com")
+        response = client.post(
+            "/api/v1/brands", headers=auth_header(token), json={"name": "Yes"}
+        )
+    finally:
+        app.dependency_overrides.pop(get_settings, None)
+
+    assert response.status_code == 201
+
+
+def test_empty_allowlist_blocks_everyone(client: TestClient) -> None:
+    app.dependency_overrides[get_settings] = lambda: Settings(brand_creation_allowlist="")
+    try:
+        token = make_token(email="anyone@example.com")
+        response = client.post(
+            "/api/v1/brands", headers=auth_header(token), json={"name": "Blocked"}
+        )
+    finally:
+        app.dependency_overrides.pop(get_settings, None)
+
+    assert response.status_code == 403
+
+
+def test_wildcard_allowlist_allows_anyone(client: TestClient) -> None:
+    app.dependency_overrides[get_settings] = lambda: Settings(brand_creation_allowlist="*")
+    try:
+        token = make_token(email="whoever@example.com")
+        response = client.post(
+            "/api/v1/brands", headers=auth_header(token), json={"name": "Wildcard"}
+        )
+    finally:
+        app.dependency_overrides.pop(get_settings, None)
+
+    assert response.status_code == 201

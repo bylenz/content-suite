@@ -20,10 +20,13 @@ from app.visual_audit.router import router as visual_audit_router
 def create_app() -> FastAPI:
     settings = get_settings()
     app = FastAPI(title="Content Suite API", version="0.1.0")
+    allow_any_origin = "*" in settings.cors_origins
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=settings.cors_origins,
-        allow_credentials=True,
+        allow_origins=["*"] if allow_any_origin else settings.cors_origins,
+        # Auth travels in the Authorization header, not cookies; browsers reject
+        # a wildcard origin combined with credentials, so drop them in that mode.
+        allow_credentials=not allow_any_origin,
         allow_methods=["*"],
         allow_headers=["*"],
     )

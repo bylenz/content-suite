@@ -21,6 +21,10 @@ TEST_JWT_ISSUER = "https://test-project.supabase.co/auth/v1"
 TEST_JWT_AUDIENCE = "authenticated"
 os.environ.setdefault("CONTENT_SUITE_AUTH_JWT_SECRET", TEST_JWT_SECRET)
 os.environ.setdefault("CONTENT_SUITE_AUTH_JWT_ISSUER", TEST_JWT_ISSUER)
+# Wildcard: most tests create brands for arbitrary emails and aren't exercising
+# the allowlist itself -- that gets its own dedicated coverage with a narrower
+# get_settings override (see test_identity_create_brand.py).
+os.environ.setdefault("CONTENT_SUITE_BRAND_CREATION_ALLOWLIST", "*")
 
 from app.db import (
     Base,  # noqa: E402

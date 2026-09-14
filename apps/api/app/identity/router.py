@@ -3,6 +3,7 @@
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 
+from app.config import Settings, get_settings
 from app.db import get_session
 from app.identity.auth import AuthenticatedUser, get_current_user
 from app.identity.schemas import BrandCreateIn, Me, MembershipOut
@@ -24,5 +25,6 @@ def create_workspace(
     payload: BrandCreateIn,
     user: AuthenticatedUser = Depends(get_current_user),
     session: Session = Depends(get_session),
+    settings: Settings = Depends(get_settings),
 ) -> MembershipOut:
-    return create_brand(session, user, payload)
+    return create_brand(session, user, payload, settings)
