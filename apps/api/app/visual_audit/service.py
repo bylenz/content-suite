@@ -329,9 +329,30 @@ def _compose_audit_request(item: CreativeItem, context: knowledge_service.BuiltC
             f"- rule_id={rule.id} [{rule.section}/{rule.rule_type}] {rule.content}"
             for rule in context.semantic
         ],
-        "Respond with JSON matching the VisualAuditResult contract; findings must "
-        "cite only rule_id values present above, severity in low|medium|high and "
-        "status in pass|fail.",
+        "Respond with a single JSON object and nothing else (no markdown fences, "
+        "no extra keys, no field named differently) with EXACTLY this shape:",
+        "{",
+        '  "checks": [',
+        '    {"check_id": "<one rule_id from above>", "label": "<short label>", '
+        '"status": "pass" | "fail"}',
+        "  ],",
+        '  "findings": [',
+        "    {",
+        '      "rule_id": "<one rule_id from above>",',
+        '      "category": "<short category, e.g. logo|color|typography|layout>",',
+        '      "expected": "<what the rule requires>",',
+        '      "detected": "<what you actually observed in the image>",',
+        '      "evidence": "<specific visual evidence supporting the finding>",',
+        '      "recommendation": "<concrete action to fix it, or \'none\' if pass>",',
+        '      "severity": "low" | "medium" | "high",',
+        '      "status": "pass" | "fail"',
+        "    }",
+        "  ],",
+        '  "summary": "<1-3 sentence overall summary>"',
+        "}",
+        "Include one findings entry per rule listed above (pass or fail), citing "
+        "only rule_id values present above. Do not add, rename, or omit any key "
+        "shown in the shape above.",
     ]
     return "\n".join(lines)
 
