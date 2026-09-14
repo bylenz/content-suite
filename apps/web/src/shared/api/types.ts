@@ -147,3 +147,46 @@ export interface TraceListResponse {
   /** Estado explícito de Langfuse (spec 07): falso no rompe flujos, solo informa. */
   langfuse_configured: boolean
 }
+
+/*
+ * Dashboard Activity (change 014): Content Pipeline breakdown y feed de
+ * Recent Activity, ambos derivados de tablas ya existentes, sin agregación
+ * multi-marca (`brand_id` siempre explícito).
+ */
+
+/** Los 7 valores reales de `creative_items.workflow_status` (DATA_MODEL.md);
+ * nunca la simplificación de 4 categorías del mockup original. */
+export type CreativeWorkflowStatus =
+  | 'DRAFT'
+  | 'PENDING_CONTENT_REVIEW'
+  | 'CONTENT_CHANGES_REQUESTED'
+  | 'CONTENT_APPROVED'
+  | 'PENDING_VISUAL_REVIEW'
+  | 'VISUAL_CHANGES_REQUESTED'
+  | 'FINAL_APPROVED'
+
+export interface PipelineOut {
+  brand_id: string
+  counts: Record<CreativeWorkflowStatus, number>
+  total: number
+}
+
+/** Las dos únicas fuentes de evento persistidas hoy (design.md Non-Goals):
+ * auditoría de IA y sincronización de Knowledge quedan fuera de alcance. */
+export type ActivitySource = 'WORKFLOW_EVENT' | 'BRAND_DNA_PUBLISHED'
+
+export interface ActivityEventOut {
+  id: string
+  source: ActivitySource
+  event_type: string
+  actor_id: string | null
+  created_at: string
+  creative_item_id: string | null
+  brand_dna_version_id: string | null
+  metadata: Record<string, unknown> | null
+}
+
+export interface ActivityListResponse {
+  items: ActivityEventOut[]
+  total: number
+}
