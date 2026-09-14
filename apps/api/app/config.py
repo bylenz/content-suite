@@ -19,6 +19,18 @@ class Settings(BaseSettings):
     auth_jwt_issuer: str = ""
     auth_jwt_audience: str = "authenticated"
     cors_origins: list[str] = ["http://localhost:5173", "http://127.0.0.1:5173"]
+    # AI platform (empty defaults: the app starts fully unconfigured; resolution of
+    # adapters/tracers treats empty as "not configured", never as an error).
+    ai_provider: str = ""
+    langfuse_public_key: str = ""
+    langfuse_secret_key: str = ""
+    langfuse_host: str = ""
+    # OpenAI embeddings (production provider). Empty/0 defaults keep the app
+    # starting unconfigured; the resolver treats them as "not configured".
+    openai_api_key: str = ""
+    openai_embedding_model: str = ""
+    openai_embedding_dimensions: int = 0
+    openai_text_model: str = ""
 
 
 @lru_cache

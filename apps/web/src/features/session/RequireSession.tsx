@@ -1,5 +1,6 @@
 import { Outlet } from 'react-router'
 import { useSession } from './useSession'
+import type { DemoRole } from './roles'
 import { LoadingState, SessionMissingState } from '../../shared/components/StateViews'
 
 /**
@@ -7,14 +8,24 @@ import { LoadingState, SessionMissingState } from '../../shared/components/State
  * No valida permisos; eso es autoridad del backend.
  */
 export function RequireSession() {
-  const { status, enterDemoSession } = useSession()
+  const { status, authenticate, availableDevRoles, authError, signInWithMagicLink } = useSession()
 
   if (status === 'initializing') {
     return <LoadingState label="Estableciendo sesión…" />
   }
 
   if (status === 'anonymous') {
-    return <SessionMissingState onEnterDemo={() => enterDemoSession()} />
+    return (
+      <SessionMissingState
+        // Solo en desarrollo existe el mapping ignorado de tokens de dev.
+        devRoles={availableDevRoles}
+        authError={authError}
+        onEnterDemo={
+          availableDevRoles.length > 0 ? (role: DemoRole) => authenticate(role) : undefined
+        }
+        onSignInWithMagicLink={signInWithMagicLink}
+      />
+    )
   }
 
   return <Outlet />

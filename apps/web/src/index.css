@@ -1,5 +1,4 @@
 @import 'tailwindcss';
-@import 'claymorphism-css/dist/clay.css';
 
 /*
   Paleta canónica (única fuente de color del producto).
@@ -14,6 +13,8 @@
 
   /* Derivados de la paleta */
   --color-canvas: color-mix(in srgb, #f1faee 30%, #ffffff);
+  /* Sidebar clara y elevada de la referencia (#fbfcfd): blanco con matiz honeydew */
+  --color-sidebar: color-mix(in srgb, #f1faee 8%, #ffffff);
   --color-surface: #ffffff;
   --color-ink: #1d3557;
   --color-ink-muted: color-mix(in srgb, #1d3557 70%, #ffffff);
@@ -43,64 +44,121 @@
 }
 
 /*
-  Materialidad clay (sobre claymorphism-css `.clay`).
-  Solo superficies elevadas: sidebar, tarjetas, paneles, CTAs, badges de estado.
-  Contenido denso (datos, formularios, tablas) usa `.clay-subtle`.
+  Materialidad clay como CSS propio (la base `.clay` externa fue eliminada
+  en la change 004). Solo superficies elevadas: sidebar, tarjetas,
+  paneles, CTAs, badges de estado. Contenido denso (datos, formularios,
+  tablas) usa `.clay-subtle`.
+  Nota: el import externo anteponía la palabra clave `inset` a valores que
+  ya la incluían (`inset inset …`), invalidando el box-shadow completo; esta
+  versión local aplica el relieve tal como fue diseñado en la referencia.
+  En `@layer components` para que las utilidades Tailwind (bg-*, rounded-*,
+  text-*) puedan sobreescribirlas (banners semánticos, hover de filas).
 */
-.clay-card {
-  --clay-background: var(--color-surface);
-  --clay-border-radius: 14px;
-  --clay-shadow-outset:
-    10px 10px 22px rgba(163, 177, 198, 0.38), -6px -6px 16px rgba(255, 255, 255, 0.78);
-  --clay-shadow-inset-primary: inset 0 1px 0 rgba(255, 255, 255, 0.72);
-  --clay-shadow-inset-secondary: inset -3px -3px 7px rgba(163, 177, 198, 0.16);
+@layer components {
+  .clay {
+    background: var(--color-surface);
+    border-radius: 14px;
+  }
+
+  .clay-card {
+    background: var(--color-surface);
+    border-radius: 14px;
+    box-shadow:
+      10px 10px 22px rgba(163, 177, 198, 0.38),
+      -6px -6px 16px rgba(255, 255, 255, 0.78),
+      inset 0 1px 0 rgba(255, 255, 255, 0.72),
+      inset -3px -3px 7px rgba(163, 177, 198, 0.16);
+  }
+
+  .clay-deep {
+    background: var(--color-deep);
+    border-radius: 14px;
+    box-shadow:
+      10px 10px 22px rgba(29, 53, 87, 0.35),
+      -6px -6px 16px rgba(255, 255, 255, 0.5),
+      inset 0 1.5px 0 rgba(255, 255, 255, 0.1);
+  }
+
+  .clay-chip {
+    background: var(--color-surface);
+    border-radius: 9px;
+    box-shadow:
+      5px 5px 12px rgba(163, 177, 198, 0.38),
+      -4px -4px 10px rgba(255, 255, 255, 0.85),
+      inset 0 1px 0 rgba(255, 255, 255, 0.6),
+      inset -2px -2px 5px rgba(163, 177, 198, 0.14);
+  }
+
+  /* Relieve reducido para contenido denso: legibilidad sobre materialidad */
+  .clay-subtle {
+    background: var(--color-surface);
+    border-radius: 10px;
+    box-shadow:
+      0 1px 2px rgba(29, 53, 87, 0.05),
+      inset 0 1px 0 rgba(255, 255, 255, 0.65),
+      inset 2px 2px 5px rgba(163, 177, 198, 0.18);
+  }
+
+  /* CTA azul con relieve físico (Steel Blue accesible sobre texto blanco) */
+  .clay-cta {
+    background: var(--color-steel);
+    border-radius: 9px;
+    box-shadow:
+      7px 7px 16px rgba(69, 123, 157, 0.4),
+      -5px -5px 12px rgba(255, 255, 255, 0.6),
+      inset 0 1.5px 0 rgba(255, 255, 255, 0.3);
+    color: #ffffff;
+  }
+
+  /* Nav activa: selección azul acolchada */
+  .nav-active {
+    background: var(--color-tint-frosted);
+    border-radius: 9px;
+    box-shadow:
+      inset 3px 3px 7px rgba(163, 177, 198, 0.35),
+      inset -3px -3px 7px rgba(255, 255, 255, 0.8);
+  }
+
+  /* Superficie hundida (chips de acción secundaria, tarjeta de usuario) */
+  .clay-inset {
+    background: var(--color-tint-frosted);
+    border-radius: 9px;
+    box-shadow:
+      inset 3px 3px 7px rgba(163, 177, 198, 0.3),
+      inset -3px -3px 7px rgba(255, 255, 255, 0.75);
+  }
 }
 
-.clay-deep {
-  --clay-background: var(--color-deep);
-  --clay-border-radius: 14px;
-  --clay-shadow-outset:
-    10px 10px 22px rgba(29, 53, 87, 0.35), -6px -6px 16px rgba(255, 255, 255, 0.5);
-  --clay-shadow-inset-primary: inset 0 1.5px 0 rgba(255, 255, 255, 0.1);
-  --clay-shadow-inset-secondary: inset 0 0 0 rgba(0, 0, 0, 0);
+/*
+  Tokens de motion compartidos (misma curva/duración que Motion en
+  shared/motion.ts). Solo opacidad/transform; nunca `transition: all`.
+*/
+:root {
+  --ease-soft: cubic-bezier(0.23, 1, 0.32, 1);
+  --duration-soft: 180ms;
+  --duration-press: 150ms;
 }
 
-.clay-chip {
-  --clay-background: var(--color-surface);
-  --clay-border-radius: 9px;
-  --clay-shadow-outset:
-    5px 5px 12px rgba(163, 177, 198, 0.38), -4px -4px 10px rgba(255, 255, 255, 0.85);
-  --clay-shadow-inset-primary: inset 0 1px 0 rgba(255, 255, 255, 0.6);
-  --clay-shadow-inset-secondary: inset -2px -2px 5px rgba(163, 177, 198, 0.14);
-}
-
-/* Relieve reducido para contenido denso: legibilidad sobre materialidad */
-.clay-subtle {
-  --clay-background: var(--color-surface);
-  --clay-border-radius: 10px;
-  --clay-shadow-outset: 0 1px 2px rgba(29, 53, 87, 0.05);
-  --clay-shadow-inset-primary: inset 0 1px 0 rgba(255, 255, 255, 0.65);
-  --clay-shadow-inset-secondary: inset 2px 2px 5px rgba(163, 177, 198, 0.18);
-}
-
-/* CTA azul con relieve físico (Steel Blue accesible sobre texto blanco) */
-.clay-cta {
-  --clay-background: var(--color-steel);
-  --clay-border-radius: 9px;
-  --clay-shadow-outset:
-    7px 7px 16px rgba(69, 123, 157, 0.4), -5px -5px 12px rgba(255, 255, 255, 0.6);
-  --clay-shadow-inset-primary: inset 0 1.5px 0 rgba(255, 255, 255, 0.3);
-  --clay-shadow-inset-secondary: inset 0 0 0 rgba(0, 0, 0, 0);
-  color: #ffffff;
-}
-
-/* Nav activa: selección azul acolchada */
-.nav-active {
-  --clay-background: var(--color-tint-frosted);
-  --clay-border-radius: 9px;
-  --clay-shadow-outset: 0 0 0 rgba(0, 0, 0, 0);
-  --clay-shadow-inset-primary: inset 3px 3px 7px rgba(163, 177, 198, 0.35);
-  --clay-shadow-inset-secondary: inset -3px -3px 7px rgba(255, 255, 255, 0.8);
+/*
+  Microinteracciones de puntero fino (hover/press). Limitadas a dispositivos
+  con hover real para no animar táctil ni teclado; reduced motion las reduce
+  con la regla global de abajo.
+*/
+@media (hover: hover) and (pointer: fine) {
+  .clay-press {
+    transition: transform var(--duration-press) var(--ease-soft);
+  }
+  .clay-press:active {
+    transform: translateY(1px);
+  }
+  .clay-hover-raise {
+    transition:
+      transform var(--duration-soft) var(--ease-soft),
+      box-shadow var(--duration-soft) var(--ease-soft);
+  }
+  .clay-hover-raise:hover {
+    transform: translateY(-2px);
+  }
 }
 
 html {

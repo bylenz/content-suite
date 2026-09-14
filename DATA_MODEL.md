@@ -16,6 +16,7 @@ erDiagram
   VISUAL_ASSET ||--o{ VISUAL_AUDIT : audits
   VISUAL_AUDIT ||--o{ VISUAL_REVIEW : decisions
   CREATIVE_ITEM ||--o{ WORKFLOW_EVENT : events
+  BRAND ||--o{ OBSERVABILITY_TRACE_INDEX : traces
 ```
 
 ## Tables
@@ -175,6 +176,23 @@ actor_id uuid FK nullable
 metadata jsonb
 created_at timestamptz
 ```
+
+### observability_trace_index
+```text
+id uuid PK
+trace_id text nullable
+brand_id uuid FK nullable
+entity_type text NOT NULL
+entity_id uuid nullable
+operation text nullable
+prompt_version text nullable
+model text nullable
+latency_ms float nullable
+outcome enum(OK, ERROR)
+error_type text nullable
+created_at timestamptz
+```
+Índices: `(brand_id, created_at DESC)` para el listado de la facade; `(entity_type, entity_id)` para binding por entidad. Read model local derivado de spans emitidos (`RecordingTracer`); `trace_id` es nulo cuando el tracer interno es no-op. Filas sin `brand_id` jamás son listables.
 
 ## Principios
 

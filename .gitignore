@@ -5,6 +5,11 @@
 # Pi project package cache (sources remain declared in .pi/settings.json)
 .pi/npm/
 
+# Local agent tool state (Claude Code, Pi agents, Playwright MCP traces)
+.agents/
+.claude/
+.playwright-mcp/
+
 # Dependencies and build output
 node_modules/
 dist/

@@ -59,7 +59,7 @@ Turborepo orquesta tareas entre apps. npm workspaces gestiona el frontend y `uv`
 
 Pi usa `pi-supabase` como MCP local del proyecto. Su configuración y cualquier material de OAuth se ignoran en Git; al primer uso, aceptar la confianza del proyecto y ejecutar `/supabase connect` para autorizar el endpoint oficial de Supabase.
 
-`starter-design/Content Suite.dc.html` y la captura de referencia son la autoridad visual de todas las pantallas y secciones. La implementación conserva su jerarquía operativa, superficies suaves, acento azul y estados pastel, con un claymorphism azul más marcado mediante Clay CSS en tarjetas, navegación, CTAs y badges. El relieve se reduce en formularios y contenido denso para preservar contraste y escaneabilidad. La paleta canónica es Strawberry Red `#E63946`, Honeydew `#F1FAEE`, Frosted Blue `#A8DADC`, Steel Blue `#457B9D` y Deep Space Blue `#1D3557`; ver roles de cada color en `docs/UI_UX.md`. Se implementan solo los flujos incluidos en la change activa.
+`starter-design/Content Suite.dc.html` y la captura de referencia son la autoridad visual de todas las pantallas y secciones. La implementación conserva su jerarquía operativa, superficies suaves, acento azul y estados pastel, con un claymorphism azul más marcado mediante CSS propio (superficies `.clay-*`) y primitives source-owned de shadcn/ui en tarjetas, navegación, CTAs y badges. El relieve se reduce en formularios y contenido denso para preservar contraste y escaneabilidad. La paleta canónica es Strawberry Red `#E63946`, Honeydew `#F1FAEE`, Frosted Blue `#A8DADC`, Steel Blue `#457B9D` y Deep Space Blue `#1D3557`; ver roles de cada color en `docs/UI_UX.md`. Se implementan solo los flujos incluidos en la change activa.
 
 Antes de modificar arquitectura, leer:
 
@@ -72,7 +72,7 @@ Antes de modificar arquitectura, leer:
 7. `API.md`
 8. `AGENTS.md`
 
-## Desarrollo local (foundation)
+## Desarrollo local
 
 ### Prerrequisitos
 
@@ -101,7 +101,22 @@ Variables de entorno (ver `apps/api/.env.example` y `apps/web/.env.example`):
 - `CONTENT_SUITE_DATABASE_URL` — por defecto `sqlite:///./content_suite_dev.db`; el objetivo canónico es `postgresql+psycopg://…` (Supabase).
 - `VITE_API_URL` — base de la API para el cliente web (por defecto `http://localhost:8000`).
 
-El shell web arranca anónimo: la entrada al workspace demo es explícita desde la vista de sesión faltante y es solo presentación (no autentica). La API acepta CORS desde `http://localhost:5173`.
+El shell web arranca anónimo. En desarrollo, la entrada al workspace es explícita desde la vista de sesión faltante y autentica de verdad: el botón de cada identidad adjunta el token de dev correspondiente y la sesión solo se consolida tras un `GET /api/v1/me` 200; identidad y rol provienen únicamente de esa respuesta. La API acepta CORS desde `http://localhost:5173`.
+
+### Capability Brand DNA: seeds y tokens de desarrollo
+
+Flujo local completo de `002-brand-dna-authoring` (desde `apps/api`, con `CONTENT_SUITE_AUTH_JWT_SECRET` e `ISSUER` ya configurados en `apps/api/.env`):
+
+```bash
+npm run api:migrate                            # 1. migraciones (incluye brand_dna_versions)
+cd apps/api
+uv run python -m scripts.seed                 # 2. marca Kinu + 3 perfiles + membresías (idempotente)
+uv run python -m scripts.dev_tokens           # 3. acuña tokens de 15 min y escribe el mapping
+```
+
+El paso 3 escribe `apps/web/.env.development.local` con el mapping rol → token (`VITE_DEV_API_TOKEN_CREATOR`, `VITE_DEV_API_TOKEN_CONTENT_REVIEWER`, `VITE_DEV_API_TOKEN_VISUAL_REVIEWER`). Ese archivo está ignorado por Git (`.env.*` en `.gitignore`), solo lo carga Vite en modo development y el script nunca imprime los tokens: regenerar cuando expiren. En builds de producción la lectura del mapping queda fuera del código ejecutable (`import.meta.env.DEV` es estático) y la sesión permanece anónima hasta la change de Supabase Auth.
+
+Con `npm run api:dev` y `npm run dev:web` activos, la conectividad autenticada end-to-end verificada localmente es: CORS preflight desde `http://localhost:5173` con header `authorization` → 200; `GET /api/v1/me` con token de dev → 200 con membresía `kinu` y rol resuelto en backend; sin token o token inválido → 401 con envelope `{error:{code:"UNAUTHENTICATED"}}` y la sesión web permanece anónima. Sobre `/api/v1/brands/{brand_id}/brand-dna` el Creator puede crear/editar el borrador y publicar (`expected_draft_id`); los revisores solo leen versiones publicadas (`draft: null`).
 
 ### Checks (raíz)
 
@@ -140,7 +155,13 @@ Instaladas con Context7/registry verificados; lockfiles: `package-lock.json` (np
 | web | react / react-dom | 19.3.0 |
 | web | react-router | 8.3.1 |
 | web | @tanstack/react-query | 5.102.8 |
-| web | claymorphism-css | 1.0.5 |
+| web | react-hook-form | 7.88.0 |
+| web | @hookform/resolvers | 5.9.1 |
+| web | zod | 4.6.4 |
+| web | motion (motion/react) | 13.2.0 |
+| web | shadcn primitives (@/components/ui) + cn | 0.3.0 |
+| web | radix-ui (Label/Slot) | 1.6.7 |
+| web | class-variance-authority | 0.7.1 |
 | web | vite | 8.3.0 |
 | web | tailwindcss + @tailwindcss/vite | 4.3.3 |
 | web | typescript | 5.9.3 (types-eslint requiere <6.1.0) |
@@ -160,15 +181,20 @@ Instaladas con Context7/registry verificados; lockfiles: `package-lock.json` (np
 
 Ítems de verificación pendientes de `001-foundation`; son seguimiento de verificación, no alcance de producto implementado:
 
-- **Round-trip de migración en PostgreSQL/Supabase**: aún debe ejecutarse con credenciales seguras del proyecto contra una base limpia (hoy solo se verificó en SQLite). Ejecutar `upgrade head` → `downgrade base` → `upgrade head` con `CONTENT_SUITE_DATABASE_URL=postgresql+psycopg://…` antes de depender del dialecto canónico.
-- **Revisión visual desktop/móvil**: se realizó con capturas reales de Chrome, pero la interacción por teclado del demo autenticado y del drawer móvil no pudo automatizarse en navegador porque el permiso de accesibilidad del SO no estaba disponible y no se agregó ninguna dependencia nueva de automatización.
+- **Round-trip de migración en PostgreSQL/Supabase**: aún debe ejecutarse con credenciales seguras del proyecto contra una base limpia (hoy solo se verificó en SQLite, incluida la migración `brand_dna_versions` de `002`). Ejecutar `upgrade head` → `downgrade base` → `upgrade head` con `CONTENT_SUITE_DATABASE_URL=postgresql+psycopg://…` antes de depender del dialecto canónico.
+- **Interacción por teclado en navegador**: el drawer móvil y el flujo autenticado por teclado no pudieron automatizarse en navegador (permiso de accesibilidad del SO no disponible; no se agregaron dependencias de automatización). La revisión visual 3.6/4.3 se realizó con capturas headless reales (desktop 1440×900 y móvil 390×844, vistas anónima/Creator/reviewer incluidas) y auditoría estática de foco (contrastes 4.08–11.56:1) y `prefers-reduced-motion`.
+
+## Deuda conocida de Brand DNA (002)
+
+- **Detector Impeccable**: en esta etapa no estaba disponible en el entorno de ejecución; la última pasada (foundation) no arrojó findings. Ejecutarlo sobre `apps/web/src/features/brand-dna/**`, el Dashboard y la sesión cuando el detector esté disponible.
+- **`useFieldArray` con listas de strings**: RHF 7.88 tipa `FieldArrayPath` solo para arrays de objetos; las listas de strings del formulario usan `register` + `setValue` con un único cast documentado en `BrandDnaDocumentForm.tsx`. Migrar si RHF reintroduce soporte tipado para primitivas.
 
 ## Desarrollo
 
 La implementación se realiza incrementalmente con OpenSpec. Los contratos aceptados viven en `openspec/specs/`; cada trabajo nuevo se planifica en `openspec/changes/<change>/` con `proposal.md`, delta specs, `design.md` y `tasks.md`.
 
-El primer trabajo activo es:
+El trabajo activo es:
 
-`openspec/changes/001-foundation/`
+`openspec/changes/002-brand-dna-authoring/`
 
-No implementar módulos posteriores hasta que las tareas de foundation estén completas, las validaciones pasen y la change haya sido validada. No archivarla ni iniciar otra change sin instrucción.
+`001-foundation` está completa y validada. No archivar `002-brand-dna-authoring` ni iniciar otra change sin instrucción.

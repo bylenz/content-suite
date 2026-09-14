@@ -5,8 +5,12 @@ from logging.config import fileConfig
 from sqlalchemy import engine_from_config, pool
 
 from alembic import context
+from app.brand_dna import models as brand_dna_models  # noqa: F401  (register models)
+from app.creative import models as creative_models  # noqa: F401  (register models)
 from app.db import Base
+from app.governance import models as governance_models  # noqa: F401  (register models)
 from app.identity import models  # noqa: F401  (register models on Base.metadata)
+from app.knowledge import models as knowledge_models  # noqa: F401  (register models)
 
 config = context.config
 if config.config_file_name is not None:

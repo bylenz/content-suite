@@ -47,6 +47,12 @@ export function NavIcon({ id }: { id: string }) {
           <path d="M20 20l-5-5" />
         </svg>
       )
+    case 'observability':
+      return (
+        <svg {...common}>
+          <path d="M3 12h3l2-6 4 12 2-6h7" />
+        </svg>
+      )
     default:
       return null
   }

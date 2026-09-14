@@ -56,6 +56,7 @@ POST /api/v1/creative-items/{item_id}/generate
 POST /api/v1/creative-items/{item_id}/regenerate
 POST /api/v1/creative-items/{item_id}/versions
 GET  /api/v1/creative-items/{item_id}/versions
+GET  /api/v1/creative-items/{item_id}/versions/{version_id}
 
 POST /api/v1/creative-items/{item_id}/consistency-check
 GET  /api/v1/creative-items/{item_id}/applied-context

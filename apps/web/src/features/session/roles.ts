@@ -1,36 +1,24 @@
+import type { BrandRole } from '../../shared/api/types'
+
 /**
- * Roles demo del workspace. Solo presentación: la autoridad de roles y
- * membresías vive en el backend (FastAPI). Este archivo no participa en
- * decisiones de acceso de dominio.
+ * Identidades demo de desarrollo. Solo seleccionan qué entrada del mapping
+ * ignorado de tokens se adjunta; la identidad y el rol reales provienen
+ * siempre de la respuesta de `GET /api/v1/me` (backend).
  */
 export const DEMO_ROLES = ['creator', 'content_reviewer', 'visual_reviewer'] as const
 
 export type DemoRole = (typeof DEMO_ROLES)[number]
 
-export interface RoleProfile {
-  id: DemoRole
-  label: string
-  /** Nombre demo para el avatar del shell (dato de demostración, no dominio) */
-  demoName: string
-}
-
-export const ROLE_PROFILES: Record<DemoRole, RoleProfile> = {
-  creator: { id: 'creator', label: 'Creator', demoName: 'Elena' },
-  content_reviewer: {
-    id: 'content_reviewer',
-    label: 'Content Reviewer',
-    demoName: 'Maria',
-  },
-  visual_reviewer: {
-    id: 'visual_reviewer',
-    label: 'Visual Compliance Reviewer',
-    demoName: 'Diego',
-  },
-}
-
 export function isDemoRole(value: string): value is DemoRole {
   return (DEMO_ROLES as readonly string[]).includes(value)
 }
 
-/** Marca demo del workspace; los datos reales serán seeds del backend. */
-export const DEMO_WORKSPACE = { name: 'Kinu' } as const
+/** Etiquetas legibles de los roles resueltos por el backend. */
+export const ROLE_LABELS: Record<BrandRole, string> = {
+  CREATOR: 'Creator',
+  CONTENT_REVIEWER: 'Content Reviewer',
+  VISUAL_REVIEWER: 'Visual Compliance Reviewer',
+}
+
+/** Fallback de presentación mientras la sesión no resuelve la marca real. */
+export const WORKSPACE_FALLBACK_NAME = 'Workspace'

@@ -1,17 +1,28 @@
 import { NavLink } from 'react-router'
 import { useSession } from '../session/useSession'
-import { DEMO_WORKSPACE, ROLE_PROFILES } from '../session/roles'
+import { ROLE_LABELS, WORKSPACE_FALLBACK_NAME, type DemoRole } from '../session/roles'
 import { groupNavItems, NAV_ITEMS } from './nav'
 import { NavIcon } from './NavIcon'
 
+/** Etiqueta de la identidad de dev para el conmutador (solo presentación). */
+const DEMO_ROLE_LABELS: Record<DemoRole, string> = {
+  creator: 'Creator',
+  content_reviewer: 'Content Reviewer',
+  visual_reviewer: 'Visual Compliance Reviewer',
+}
+
 /**
  * Sidebar persistente y elevada, con navegación azul acolchada por rol.
- * Las secciones sin change implementada se listan deshabilitadas.
+ * La identidad y el rol provienen de `/api/v1/me`; el conmutador de identidad
+ * de dev solo selecciona el token adjunto. Las secciones sin change
+ * implementada se listan deshabilitadas.
  */
 export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
-  const { demoRole, switchDemoRole, nextDemoRole } = useSession()
-  const grouped = groupNavItems(NAV_ITEMS[demoRole])
-  const profile = ROLE_PROFILES[demoRole]
+  const { profile, switchRole, availableDevRoles, nextDevRole, signOut } = useSession()
+  const role = profile?.membership?.role
+  const navItems = role ? NAV_ITEMS[role] : Object.values(NAV_ITEMS)[0]
+  const grouped = groupNavItems(navItems)
+  const workspaceName = profile?.membership?.brand_name ?? WORKSPACE_FALLBACK_NAME
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-1 p-3.5">
@@ -30,13 +41,13 @@ export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
           aria-hidden="true"
           className="grid size-[22px] place-items-center rounded-[7px] bg-strawberry text-[10px] font-bold text-white shadow-[inset_0_1px_0_rgba(255,255,255,.35),3px_3px_8px_rgba(230,57,70,.35)]"
         >
-          {DEMO_WORKSPACE.name.charAt(0)}
+          {workspaceName.charAt(0)}
         </span>
         <span className="min-w-0 flex-1">
           <span className="block truncate text-[12.5px] font-semibold leading-tight text-ink">
-            {DEMO_WORKSPACE.name}
+            {workspaceName}
           </span>
-          <span className="block text-[10.5px] text-ink-soft">Workspace demo</span>
+          <span className="block text-[10.5px] text-ink-soft">Workspace</span>
         </span>
       </div>
 
@@ -44,7 +55,15 @@ export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
         {grouped.map(({ group, items }) => (
           <div key={group}>
             <p className="px-2.5 pb-1 pt-3 text-[10.5px] font-bold uppercase tracking-[0.06em] text-ink-soft">
-              {group === 'WORKSPACE' ? 'Workspace' : group === 'BRAND' ? 'Brand' : group === 'CREATE' ? 'Create' : 'Governance'}
+              {group === 'WORKSPACE'
+                ? 'Workspace'
+                : group === 'BRAND'
+                  ? 'Brand'
+                  : group === 'CREATE'
+                    ? 'Create'
+                    : group === 'SYSTEM'
+                      ? 'System'
+                      : 'Governance'}
             </p>
             <ul>
               {items.map((item) =>
@@ -79,6 +98,10 @@ export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
                         <NavIcon id={item.id} />
                       </span>
                       {item.label}
+                      {/* Etiqueta explícita de future: no simula capacidad activa */}
+                      <span className="ml-auto rounded-[5px] bg-tint-steel px-1.5 py-0.5 text-[9.5px] font-bold uppercase tracking-wide">
+                        Próximamente
+                      </span>
                     </span>
                   </li>
                 ),
@@ -88,26 +111,39 @@ export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
         ))}
       </nav>
 
-      <div className="clay clay-subtle mt-2 flex items-center gap-2.5 px-2.5 py-2">
+      <div className="clay clay-inset mt-2 flex items-center gap-2.5 px-2.5 py-2">
         <span
           aria-hidden="true"
           className="grid size-7 place-items-center rounded-lg bg-frosted text-xs font-bold text-ink"
         >
-          {profile.demoName.charAt(0)}
+          {profile?.displayName.charAt(0) ?? '?'}
         </span>
         <span className="min-w-0 flex-1">
           <span className="block truncate text-[12.5px] font-semibold leading-tight text-ink">
-            {profile.demoName}
+            {profile?.displayName ?? 'Sin sesión'}
           </span>
-          <span className="block truncate text-[10.5px] text-ink-soft">{profile.label}</span>
+          <span className="block truncate text-[10.5px] text-ink-soft">
+            {role ? ROLE_LABELS[role] : '—'}
+          </span>
         </span>
       </div>
+      {/* Conmutador de identidad de dev: solo selecciona el token adjunto;
+          el rol mostrado siempre proviene de la API. */}
+      {nextDevRole && availableDevRoles.length > 1 && (
+        <button
+          type="button"
+          onClick={() => switchRole(nextDevRole)}
+          className="pt-1.5 text-center text-[10.5px] font-semibold text-ink-soft transition-colors hover:text-steel"
+        >
+          Cambiar a {DEMO_ROLE_LABELS[nextDevRole]} (dev)
+        </button>
+      )}
       <button
         type="button"
-        onClick={() => switchDemoRole(nextDemoRole)}
-        className="pt-1.5 text-center text-[10.5px] font-semibold text-ink-soft transition-colors hover:text-steel"
+        onClick={() => void signOut()}
+        className="pt-1.5 text-center text-[10.5px] font-semibold text-ink-soft transition-colors hover:text-strawberry"
       >
-        Cambiar a {ROLE_PROFILES[nextDemoRole].demoName} · {ROLE_PROFILES[nextDemoRole].label} (demo)
+        Cerrar sesión
       </button>
     </div>
   )

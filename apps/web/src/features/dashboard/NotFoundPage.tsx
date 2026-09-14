@@ -1,5 +1,6 @@
 import { Link } from 'react-router'
 import { ErrorState } from '../../shared/components/StateViews'
+import { Button } from '@/components/ui/button'
 
 export function NotFoundPage() {
   return (
@@ -8,12 +9,9 @@ export function NotFoundPage() {
         title="Página no encontrada"
         description="La ruta que buscas no existe en esta entrega. Vuelve al dashboard del workspace."
       >
-        <Link
-          to="/"
-          className="clay clay-cta px-5 py-2.5 text-sm font-semibold"
-        >
-          Volver al dashboard
-        </Link>
+        <Button asChild>
+          <Link to="/">Volver al dashboard</Link>
+        </Button>
       </ErrorState>
     </main>
   )
