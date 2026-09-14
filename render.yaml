@@ -1,0 +1,54 @@
+# Render Blueprint for the FastAPI backend (apps/api).
+# Secrets are declared with `sync: false`: Render asks for their values in the
+# Dashboard when the Blueprint is first applied; they are never stored in Git.
+services:
+  - type: web
+    name: content-suite-api
+    runtime: python
+    plan: free
+    # Closest US region to the Supabase database (sa-east-1).
+    region: virginia
+    rootDir: apps/api
+    buildCommand: uv sync --frozen --no-dev
+    # Free plan has no preDeployCommand, so migrations run before the server starts.
+    # On a paid plan, move `uv run alembic upgrade head` to preDeployCommand.
+    startCommand: uv run alembic upgrade head && uv run uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health/ready
+    autoDeploy: true
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.12.13"
+      # Non-secret configuration
+      # Any origin may call the API (bearer auth, no cookies): covers the Vercel
+      # production domain and its per-deploy preview URLs.
+      - key: CONTENT_SUITE_CORS_ORIGINS
+        value: "*"
+      - key: CONTENT_SUITE_AI_PROVIDER
+        value: openai
+      - key: CONTENT_SUITE_VISION_PROVIDER
+        value: glm
+      - key: CONTENT_SUITE_LANGFUSE_HOST
+        value: https://us.cloud.langfuse.com
+      - key: CONTENT_SUITE_STORAGE_BUCKET
+        value: content-suite
+      # Set in the Dashboard (values from apps/api/.env, without quotes)
+      - key: CONTENT_SUITE_DATABASE_URL
+        sync: false
+      - key: CONTENT_SUITE_AUTH_JWT_SECRET
+        sync: false
+      - key: CONTENT_SUITE_AUTH_JWT_ISSUER
+        sync: false
+      - key: CONTENT_SUITE_BRAND_CREATION_ALLOWLIST
+        sync: false
+      - key: CONTENT_SUITE_OPENAI_API_KEY
+        sync: false
+      - key: CONTENT_SUITE_GLM_API_KEY
+        sync: false
+      - key: CONTENT_SUITE_LANGFUSE_PUBLIC_KEY
+        sync: false
+      - key: CONTENT_SUITE_LANGFUSE_SECRET_KEY
+        sync: false
+      - key: CONTENT_SUITE_STORAGE_PROJECT_URL
+        sync: false
+      - key: CONTENT_SUITE_STORAGE_SERVICE_KEY
+        sync: false
