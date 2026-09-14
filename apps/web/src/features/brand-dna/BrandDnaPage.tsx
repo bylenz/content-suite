@@ -128,9 +128,14 @@ export function BrandDnaPage() {
             }
           >
             {isCreator && (
-              <Button asChild>
-                <Link to="/brand-dna/create">Crear Brand DNA</Link>
-              </Button>
+              <div className="flex flex-wrap justify-center gap-2.5">
+                <Button asChild>
+                  <Link to="/brand-dna/generate">Generar con IA</Link>
+                </Button>
+                <Button asChild variant="outline">
+                  <Link to="/brand-dna/create">Crear manualmente</Link>
+                </Button>
+              </div>
             )}
           </EmptyState>
         </motion.div>

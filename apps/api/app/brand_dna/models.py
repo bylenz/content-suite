@@ -61,6 +61,9 @@ class BrandDnaVersion(Base):
     version: Mapped[int] = mapped_column(Integer)
     status: Mapped[BrandDnaStatus] = mapped_column(Enum(BrandDnaStatus, name="brand_dna_status"))
     document: Mapped[dict] = mapped_column(JSON())
+    # The brief that originated a generation (change 013); nullable because
+    # manually-authored or pre-013 versions never have one.
+    brief: Mapped[dict | None] = mapped_column(JSON(), nullable=True)
     created_by: Mapped[uuid.UUID] = mapped_column(ForeignKey("profiles.id"))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     published_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))

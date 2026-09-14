@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { apiFetch } from '../../shared/api/client'
 import type {
+  BrandBriefIn,
   BrandDnaDocument,
   BrandDnaOverview,
   BrandDnaVersion,
@@ -74,6 +75,26 @@ export function usePublishDraft(brandId: string) {
       }),
     onSuccess: invalidate,
     onError: invalidate,
+  })
+}
+
+/**
+ * Generación asistida por IA del borrador a partir de un brief (change 013):
+ * invoca la AI Platform y persiste el resultado exactamente por el mismo
+ * camino de upsert que `PATCH /draft` (reemplaza un borrador existente en el
+ * mismo registro o crea la versión 1). No exige Knowledge sincronizada. Un
+ * 503 (proveedor no configurado o salida inválida) no persiste ningún cambio.
+ */
+export function useGenerateBrandDna(brandId: string) {
+  const invalidate = useInvalidateBrandDna(brandId)
+  return useMutation({
+    mutationFn: (brief: BrandBriefIn) =>
+      apiFetch<BrandDnaVersion>(`/api/v1/brands/${brandId}/brand-dna/generate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ brief }),
+      }),
+    onSuccess: invalidate,
   })
 }
 

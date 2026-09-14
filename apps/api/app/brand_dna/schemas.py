@@ -1,84 +1,71 @@
 """Schemas for the brand_dna module: canonical document contract and API resources.
 
-The canonical document contract is strict (extra="forbid"): every string is
-trimmed before validation/persistence, empty-after-trim strings are invalid,
-types/cardinalities/limits match design.md exactly, and unknown sections,
-fields or keys are rejected with 422 and their field paths.
+The canonical document contract (`BrandDnaDocument`) is strict (extra="forbid"):
+every string is trimmed before validation/persistence, empty-after-trim strings
+are invalid, types/cardinalities/limits match design.md exactly, and unknown
+sections, fields or keys are rejected with 422 and their field paths. It now
+lives in `app.ai.contracts` (change 013): that module is the AI Platform's
+contract boundary, and `run_capability` validates generation output against
+this exact same contract manual authoring persists. This module imports it
+from there rather than redefining it (single definition, one direction of
+dependency — same pattern `app.creative.schemas` uses).
 """
 
 import uuid
 from datetime import datetime
-from typing import Annotated
+from typing import Annotated, Any
 
-from pydantic import BaseModel, ConfigDict, Field, StringConstraints, model_validator
+from pydantic import BaseModel, ConfigDict, Field, StringConstraints
 
+from app.ai.contracts import BrandDnaDocument, Example300, Label60, Narrative500
 from app.brand_dna.models import BrandDnaStatus, KnowledgeStatus
 
+# Re-exported for backward compatibility: pre-013 code imported this constant
+# from this module.
 MAX_DOCUMENT_BYTES = 32 * 1024
 
-Narrative500 = Annotated[
-    str, StringConstraints(strip_whitespace=True, min_length=1, max_length=500)
-]
-Narrative1000 = Annotated[
-    str, StringConstraints(strip_whitespace=True, min_length=1, max_length=1000)
-]
-Label60 = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=60)]
-Example300 = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=300)]
+# Brief input fields (change 013) are a distinct, smaller shape than the
+# document contract above: short single-line values, not narrative sections.
+BriefField = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=120)]
 
 
 class _Strict(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
 
-class IdentitySection(_Strict):
-    purpose: Narrative500
-    positioning: Narrative500
-    personality_traits: list[Label60] = Field(min_length=1, max_length=8)
-    audience: Narrative500
+class BrandBasicsIn(_Strict):
+    brand_name: BriefField
+    offering: BriefField
+    description: Narrative500 | None = None
 
 
-class VoiceSection(_Strict):
-    tone_characteristics: list[Label60] = Field(min_length=1, max_length=8)
-    usage_guide: Narrative1000
-    preferred_vocabulary: list[Label60] = Field(max_length=30)
-    avoid_vocabulary: list[Label60] = Field(max_length=30)
-    do_examples: list[Example300] = Field(min_length=1, max_length=10)
-    dont_examples: list[Example300] = Field(min_length=1, max_length=10)
+class AudienceIn(_Strict):
+    primary_audience: BriefField
+    market: BriefField
+    description: Narrative500
+    tags: list[Label60] = Field(default_factory=list, max_length=10)
 
 
-class MessagePillar(_Strict):
-    name: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=80)]
-    description: Example300
+class PersonalityToneIn(_Strict):
+    traits: list[Label60] = Field(min_length=1, max_length=10)
 
 
-class CommunicationSection(_Strict):
-    message_pillars: list[MessagePillar] = Field(min_length=1, max_length=5)
-    rules: list[Example300] = Field(min_length=1, max_length=20)
+class BrandRulesIn(_Strict):
+    always: list[Example300] = Field(min_length=1, max_length=20)
+    never: list[Example300] = Field(min_length=1, max_length=20)
 
 
-class VisualRulesSection(_Strict):
-    visual_personality: Narrative500
-    imagery_direction: Narrative500
-    composition: Narrative500
-    logo_usage: Narrative500
+class BrandBriefIn(_Strict):
+    """Onboarding brief that seeds AI generation of the Brand DNA draft.
 
+    Matches the 'Create Brand DNA' screen (starter-design/Content Suite.dc.html):
+    Brand Basics, Audience, Personality & Tone, Brand Rules.
+    """
 
-class RestrictionsSection(_Strict):
-    rules: list[Example300] = Field(min_length=1, max_length=20)
-
-
-class BrandDnaDocument(_Strict):
-    identity: IdentitySection
-    voice: VoiceSection
-    communication: CommunicationSection
-    visual_rules: VisualRulesSection
-    restrictions: RestrictionsSection
-
-    @model_validator(mode="after")
-    def _serialized_size_limit(self) -> "BrandDnaDocument":
-        if len(self.model_dump_json().encode("utf-8")) > MAX_DOCUMENT_BYTES:
-            raise ValueError(f"document exceeds {MAX_DOCUMENT_BYTES} bytes serialized")
-        return self
+    basics: BrandBasicsIn
+    audience: AudienceIn
+    personality: PersonalityToneIn
+    rules: BrandRulesIn
 
 
 def derive_section_counts(document: BrandDnaDocument) -> dict[str, int]:
@@ -116,6 +103,10 @@ class BrandDnaVersionOut(BaseModel):
     published_at: datetime | None
     knowledge_status: KnowledgeStatus
     section_counts: dict[str, int]
+    # The brief that originated a generation (change 013), distinct from the
+    # document itself; null when the version was never generated by AI or a
+    # manual edit replaced the document without touching this field.
+    brief: dict[str, Any] | None = None
 
 
 class BrandDnaVersionSummary(BaseModel):
@@ -147,3 +138,7 @@ class DraftUpdateIn(BaseModel):
 
 class PublishIn(BaseModel):
     expected_draft_id: uuid.UUID
+
+
+class GenerateIn(BaseModel):
+    brief: BrandBriefIn

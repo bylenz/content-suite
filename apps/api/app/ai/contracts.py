@@ -8,7 +8,14 @@ allowlist that may travel in tracing spans (no free-text fields by design).
 
 from typing import Annotated, Literal, Self
 
-from pydantic import BaseModel, ConfigDict, Field, model_serializer, model_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    StringConstraints,
+    model_serializer,
+    model_validator,
+)
 
 
 class _Strict(BaseModel):
@@ -16,6 +23,74 @@ class _Strict(BaseModel):
 
 
 RuleRef = Annotated[str, Field(min_length=1, max_length=100)]
+
+# --- Brand DNA document contract (change 013): moved here as-is from
+# app/brand_dna/schemas.py so `run_capability` can validate generation output
+# against the exact same contract manual authoring persists (design.md
+# 013-brand-dna-generation). Fields, limits and validators are unchanged;
+# `app/brand_dna/schemas.py` now imports these from this module.
+
+MAX_DOCUMENT_BYTES = 32 * 1024
+
+Narrative500 = Annotated[
+    str, StringConstraints(strip_whitespace=True, min_length=1, max_length=500)
+]
+Narrative1000 = Annotated[
+    str, StringConstraints(strip_whitespace=True, min_length=1, max_length=1000)
+]
+Label60 = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=60)]
+Example300 = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=300)]
+
+
+class IdentitySection(_Strict):
+    purpose: Narrative500
+    positioning: Narrative500
+    personality_traits: list[Label60] = Field(min_length=1, max_length=8)
+    audience: Narrative500
+
+
+class VoiceSection(_Strict):
+    tone_characteristics: list[Label60] = Field(min_length=1, max_length=8)
+    usage_guide: Narrative1000
+    preferred_vocabulary: list[Label60] = Field(max_length=30)
+    avoid_vocabulary: list[Label60] = Field(max_length=30)
+    do_examples: list[Example300] = Field(min_length=1, max_length=10)
+    dont_examples: list[Example300] = Field(min_length=1, max_length=10)
+
+
+class MessagePillar(_Strict):
+    name: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=80)]
+    description: Example300
+
+
+class CommunicationSection(_Strict):
+    message_pillars: list[MessagePillar] = Field(min_length=1, max_length=5)
+    rules: list[Example300] = Field(min_length=1, max_length=20)
+
+
+class VisualRulesSection(_Strict):
+    visual_personality: Narrative500
+    imagery_direction: Narrative500
+    composition: Narrative500
+    logo_usage: Narrative500
+
+
+class RestrictionsSection(_Strict):
+    rules: list[Example300] = Field(min_length=1, max_length=20)
+
+
+class BrandDnaDocument(_Strict):
+    identity: IdentitySection
+    voice: VoiceSection
+    communication: CommunicationSection
+    visual_rules: VisualRulesSection
+    restrictions: RestrictionsSection
+
+    @model_validator(mode="after")
+    def _serialized_size_limit(self) -> "BrandDnaDocument":
+        if len(self.model_dump_json().encode("utf-8")) > MAX_DOCUMENT_BYTES:
+            raise ValueError(f"document exceeds {MAX_DOCUMENT_BYTES} bytes serialized")
+        return self
 
 
 class _StrictOmitNone(_Strict):
@@ -91,6 +166,7 @@ class TraceSummary(_StrictOmitNone):
         "CreativeOutput",
         "ConsistencyResult",
         "VisualAuditResult",
+        "BrandDnaDocument",
         "KnowledgeSync",
         "KnowledgeEmbed",
         "KnowledgeRetrieval",
@@ -128,7 +204,7 @@ class TraceSummary(_StrictOmitNone):
 
 
 def build_trace_summary(
-    output: CreativeOutput | ConsistencyResult | VisualAuditResult,
+    output: CreativeOutput | ConsistencyResult | VisualAuditResult | BrandDnaDocument,
 ) -> TraceSummary:
     """Derive the bounded span summary from a validated output."""
     if isinstance(output, CreativeOutput):
@@ -141,6 +217,9 @@ def build_trace_summary(
             contract="ConsistencyResult", ok=True,
             check_count=len(output.checks), finding_count=len(output.findings),
         )
+    if isinstance(output, BrandDnaDocument):
+        # No checks/findings apply to a generated document: the bounded floor (0/0).
+        return TraceSummary(contract="BrandDnaDocument", ok=True, check_count=0, finding_count=0)
     return TraceSummary(
         contract="VisualAuditResult", ok=True,
         check_count=len(output.checks), finding_count=len(output.findings),
